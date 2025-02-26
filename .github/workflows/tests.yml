@@ -43,7 +43,7 @@ jobs:
         run: go mod download
 
       - name: Build
-        run: go build -o bin/cli -v ./cmd/http/main.go
+        run: go build -o bin/cli -v ./cmd/main.go
 
       - name: Test with go CLI
         run: go test ./... -race -json > testResults-go-${{ matrix.go-version }}.json
