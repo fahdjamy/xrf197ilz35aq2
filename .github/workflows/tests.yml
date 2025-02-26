@@ -1,0 +1,69 @@
+name: test
+
+on:
+  push:
+    branches:
+      - master
+      - develop
+
+  pull_request:
+    branches:
+      - master
+      - develop
+
+jobs:
+  # This job execute 4 different builds for a combination of 2 (os) x 2 (go-versions) values.
+  build:
+    name: build and test
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      # test on multiple operating systems and with different versions of Go
+      matrix:
+        os:
+          - ubuntu-latest
+        #          - macos-latest ### This os matrix will fail throwing a docker issue in GitHub
+        go-version:
+          - 1.22.x
+          - 1.23.0
+          - 1.24.X
+
+    steps:
+      - name: Checkout source code onto a VM
+        uses: actions/checkout@v4
+
+      - name: Setup go ${{ matrix.go-version }}
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+          #          check-latest: true
+          cache-dependency-path: "go.sum"
+
+      - name: Install dependencies
+        run: go mod download
+
+      - name: Build
+        run: go build -o bin/cli -v ./cmd/http/main.go
+
+      - name: Test with go CLI
+        run: go test ./... -race -json > testResults-go-${{ matrix.go-version }}.json
+
+      - name: Upload build artifacts ${{ matrix.os }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cli-build-artifact-${{ strategy.job-index }}-os-${{ matrix.os }}
+          path: bin/cli
+          retention-days: 10
+
+      - name: Upload Go test results for ${{ matrix.go-version }}
+        if: always() # Always run even if previous steps fail
+        uses: actions/upload-artifact@v4
+        # https://github.com/actions/upload-artifact
+        with:
+          name: test-results-${{ strategy.job-index }}-go-${{ matrix.go-version }}
+          path: testResults-go-${{ matrix.go-version }}.json
+          # Duration after which artifact will expire in days. 0 means using default retention.
+          # Minimum 1 day.
+          # Maximum 90 days unless changed from the repository settings page.
+          # Optional. Defaults to repository settings.
+          retention-days: 10
