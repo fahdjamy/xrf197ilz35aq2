@@ -2,7 +2,11 @@ package domain
 
 import "time"
 
-const PendingBid = "PENDING"
+const (
+	PendingBid  = "PENDING"
+	RejectedBid = "REJECTED"
+	AcceptedBid = "ACCEPTED"
+)
 
 type Bid struct {
 	UserFp    string    `json:"userFp"`
@@ -22,6 +26,21 @@ func NewBid(userFp string, price float64, assetId string) *Bid {
 		Price:    price,
 		AssetId:  assetId,
 		Accepted: false,
-		Status:   "",
+		Status:   PendingBid,
 	}
+}
+
+func IsValidBidStatus(status string) bool {
+	if status == "" {
+		return false
+	}
+	bidStatuses := make([]string, 0)
+	bidStatuses = append(bidStatuses, PendingBid, RejectedBid, AcceptedBid)
+
+	for _, bStatus := range bidStatuses {
+		if bStatus == status {
+			return true
+		}
+	}
+	return false
 }
