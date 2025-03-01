@@ -9,9 +9,9 @@ package domain
 // **FirstPriceSealedAuction**: Highest bidder wins and pays their bid.
 // **FixedPriceAuction** Asset is sold at a set price, no bidding involved.
 const (
-	DutchAuction            = "dutch-auction"
-	SealedAuction           = "sealed-auction"
-	EnglishAuction          = "english-auction" // New bid must be higher than the current highest bid bid_increment_amount
-	FixedPriceAuction       = "fixed-price-auction"
-	FirstPriceSealedAuction = "first-price-sealed-auction"
+	DutchAuction            = "DutchAuction"
+	SealedAuction           = "SealedAuction"
+	EnglishAuction          = "EnglishAuction" // New bid must be higher than the current highest bid bid_increment_amount
+	FixedPriceAuction       = "FixedPriceAuction"
+	FirstPriceSealedAuction = "FirstPriceSealedAuction"
 )

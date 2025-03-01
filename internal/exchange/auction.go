@@ -9,5 +9,5 @@ type NewAuctionRequest struct {
 	ReservePrice       int       `json:"reservePrice"`
 	AutoExecute        bool      `json:"autoExecute"`
 	BidIncrementAmount float64   `json:"bidIncrementAmount" validate:"required,numeric,gt=0"`
-	Type               string    `json:"type"  validate:"oneof=FirstPriceSealedAuction  DutchAuction SealedAuction EnglishAuction FixedPriceAuction"`
+	Type               string    `json:"type"  validate:"auctionType"`
 }
