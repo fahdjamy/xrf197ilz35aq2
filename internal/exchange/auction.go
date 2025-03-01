@@ -3,11 +3,11 @@ package exchange
 import "time"
 
 type NewAuctionRequest struct {
-	AssetId            string    `json:"assetId"`
-	EndTime            time.Time `json:"endTime"`
-	StartTime          time.Time `json:"startTime"`
-	Type               string    `json:"type"`
+	AssetId            string    `json:"assetId" validate:"required"`
+	EndTime            time.Time `json:"endTime"  validate:"required"`
+	StartTime          time.Time `json:"startTime"  validate:"required"`
 	ReservePrice       int       `json:"reservePrice"`
 	AutoExecute        bool      `json:"autoExecute"`
-	BidIncrementAmount float64   `json:"bidIncrementAmount"`
+	BidIncrementAmount float64   `json:"bidIncrementAmount" validate:"required,numeric,gt=0"`
+	Type               string    `json:"type"  validate:"oneof=FirstPriceSealedAuction  DutchAuction SealedAuction EnglishAuction FixedPriceAuction"`
 }
