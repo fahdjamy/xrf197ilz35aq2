@@ -29,13 +29,7 @@ func (pg *Postgres) Close(ctx context.Context) {
 
 func NewPGConnection(pgConfig internal.PostgresConfig, ctx context.Context) (pool *Postgres, err error) {
 	pgOnce.Do(func() {
-		dbURL, err := createConnString(pgConfig)
-		if err != nil {
-			dbErr = fmt.Errorf("failed to connect to 'database': %w", err)
-			return
-		}
-
-		dbPool, err = pgx.Connect(ctx, dbURL)
+		dbPool, err = pgx.Connect(ctx, pgConfig.DatabaseURL)
 		if err != nil {
 			dbErr = fmt.Errorf("failed to connect to 'database': %w", err)
 			return
@@ -51,16 +45,4 @@ func NewPGConnection(pgConfig internal.PostgresConfig, ctx context.Context) (poo
 	pgInstance = &Postgres{Pool: dbPool}
 
 	return pgInstance, nil
-}
-
-func createConnString(pgConfig internal.PostgresConfig) (string, error) {
-	conn := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s",
-		pgConfig.User,
-		pgConfig.Password,
-		pgConfig.Host,
-		pgConfig.Port,
-		pgConfig.DatabaseName,
-		pgConfig.SSLMode,
-	)
-	return conn, nil
 }

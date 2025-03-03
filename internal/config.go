@@ -41,13 +41,13 @@ func NewConfig(env string) (*Config, error) {
 	configOnce.Do(func() {
 		yamlFile, err := os.Open(fmt.Sprintf("configs/%s/config.yml", env))
 		if err != nil {
-			configErr = err
+			configErr = fmt.Errorf("failed to open config file: %w :: env=%s", err, env)
 			return
 		}
 
 		config, err = readConfiguration(yamlFile)
 		if err != nil {
-			configErr = err
+			configErr = fmt.Errorf("error reading config file: %w :: env=%s", err, env)
 			return
 		}
 		dbURL, dbURLExists := os.LookupEnv("XRF_BIDDING_PG_DB_URL")
@@ -57,7 +57,7 @@ func NewConfig(env string) (*Config, error) {
 		}
 		dbURL, err = createDBURL(config.Postgres)
 		if err != nil {
-			configErr = err
+			configErr = fmt.Errorf("failed to create postgres database URL: %w :: env=%s", err, env)
 			return
 		}
 		config.Postgres.DatabaseURL = dbURL
