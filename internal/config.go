@@ -27,8 +27,22 @@ type PostgresConfig struct {
 	DatabaseURL  string        `yml:"databaseURL"`
 }
 
+type RedisConfig struct {
+	Address      string        `yaml:"address"`
+	Password     string        `yaml:"password"`
+	Database     int           `yaml:"database"`
+	Protocol     int           `yaml:"protocol"`
+	MaxRetries   int           `yaml:"maxRetries"`
+	DialTimeout  time.Duration `yaml:"dialTimeout"`
+	ReadTimeout  time.Duration `yaml:"readTimeout"`
+	WriteTimeout time.Duration `yaml:"writeTimeout"`
+	PoolSize     int           `yaml:"poolSize"`
+	MinIdleConns int           `yaml:"minIdleConns"`
+}
+
 type Config struct {
 	Postgres PostgresConfig `yml:"postgres"`
+	Redis    RedisConfig    `yml:"redis"`
 }
 
 var (
@@ -61,6 +75,15 @@ func NewConfig(env string) (*Config, error) {
 			return
 		}
 		config.Postgres.DatabaseURL = dbURL
+
+		// IF redis environment variables are set, use environment variables
+		redisPortInEnv, portExists := os.LookupEnv("XRF_Q2_REDIS_PORT")
+		redisPasswordInEnv, redisPassExists := os.LookupEnv("XRF_Q2_REDIS_PASSWORD")
+		redisAddressInEnv, redisAddressExists := os.LookupEnv("XRF_Q2_ADDRESS_PASSWORD")
+		if redisAddressExists && portExists && redisPassExists {
+			config.Redis.Password = redisPasswordInEnv
+			config.Redis.Address = redisAddressInEnv + ":" + redisPortInEnv
+		}
 	})
 
 	// Important: Check the global error variable *after* once.Do.
