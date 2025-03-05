@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/lmittmann/tint"
 	"io"
 	"log/slog"
 	"os"
@@ -50,8 +51,13 @@ func setupLogger(env string) (*slog.Logger, error) {
 	}
 	// "dev", "test" or any other environment
 	logLevel.Set(slog.LevelDebug)
-	consoleHandler := slog.NewTextHandler(os.Stdout, &opts)
-	logger = slog.New(consoleHandler)
-	logger.Debug("running in DEV mode", "logLevel", "DEBUG", "logOutput", "console only")
+	//consoleHandler := slog.NewTextHandler(os.Stdout, &opts)
+	logger = slog.New(tint.NewHandler(os.Stdout, &tint.Options{
+		AddSource:   opts.AddSource,
+		Level:       opts.Level,
+		ReplaceAttr: opts.ReplaceAttr,
+		NoColor:     false,
+	}))
+	logger.Debug(fmt.Sprintf("running in %s mode", env), "logLevel", "DEBUG", "logOutput", "console only")
 	return logger, nil
 }
