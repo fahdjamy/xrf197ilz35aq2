@@ -14,6 +14,10 @@ const (
 	retryAfter = 2 * time.Second
 )
 
+type LogConfig struct {
+	OutputFile string `yaml:"outputFile"`
+}
+
 type PostgresConfig struct {
 	Port         int           `yml:"port"`
 	Host         string        `yml:"host"`
@@ -43,6 +47,7 @@ type RedisConfig struct {
 type Config struct {
 	Postgres PostgresConfig `yml:"postgres"`
 	Redis    RedisConfig    `yml:"redis"`
+	Log      LogConfig      `yml:"log"`
 }
 
 var (

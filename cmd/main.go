@@ -12,7 +12,9 @@ import (
 
 func main() {
 	env := getAppEnv()
-	logger, err := setupLogger(env)
+	config, err := internal.NewConfig(env)
+
+	logger, err := setupLogger(env, config.Log)
 	if err != nil {
 		fmt.Printf("Failed to setup logger: %v\n", err)
 		return
