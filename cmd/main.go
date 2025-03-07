@@ -5,6 +5,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"xrf197ilz35aq2/internal"
 	"xrf197ilz35aq2/validators"
@@ -12,7 +13,12 @@ import (
 
 func main() {
 	env := getAppEnv()
-	config, err := internal.NewConfig(env)
+	config, err := internal.NewConfig(strings.ToLower(env))
+
+	if err != nil {
+		fmt.Println("failed to load config:", err)
+		return
+	}
 
 	logger, err := setupLogger(env, config.Log)
 	if err != nil {

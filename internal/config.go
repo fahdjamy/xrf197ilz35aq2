@@ -58,7 +58,7 @@ var (
 
 func NewConfig(env string) (*Config, error) {
 	configOnce.Do(func() {
-		yamlFile, err := os.Open(fmt.Sprintf("configs/%s/config.yml", env))
+		yamlFile, err := OpenFromRoot(fmt.Sprintf("configs/config-%s.yml", env))
 		if err != nil {
 			configErr = fmt.Errorf("failed to open config file: %w :: env=%s", err, env)
 			return
