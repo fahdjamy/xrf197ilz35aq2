@@ -1,0 +1,26 @@
+environment: DEV
+
+log:
+  filename: ".logs/xrf197ilz.log"
+
+redis:
+  database: 0
+  protocol: 2
+  poolSize: 5
+  password: ""
+  maxRetries: 1
+  minIdleConns: 2
+  dialTimeout: 10s
+  readTimeout: 15s
+  writeTimeout: 30s
+  address: "127.0.0.1:6379"
+
+postgres:
+  port: 5733
+  sslMode: true
+  host: localhost
+  readTimeout: 20s
+  writeTimeout: 30s
+  user: xrf-q2-bid
+  password: krs1krs1
+  databaseName: ilz-q2-bid
