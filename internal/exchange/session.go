@@ -2,7 +2,7 @@ package exchange
 
 import "time"
 
-type NewAuctionRequest struct {
+type NewSessionRequest struct {
 	AssetId            string    `json:"assetId" validate:"required"`
 	EndTime            time.Time `json:"endTime"  validate:"required"`
 	StartTime          time.Time `json:"startTime"  validate:"required"`

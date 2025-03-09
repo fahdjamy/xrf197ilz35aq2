@@ -9,15 +9,15 @@ import (
 	"xrf197ilz35aq2/internal/exchange"
 )
 
-type Auction interface {
-	NewAuction(request exchange.NewAuctionRequest, userFp string, ctx context.Context) (*domain.Session, error)
+type SessionServ interface {
+	NewAuction(request exchange.NewSessionRequest, userFp string, ctx context.Context) (*domain.Session, error)
 }
 
-type auctionService struct {
+type sessionService struct {
 	validate *validator.Validate
 }
 
-func (a *auctionService) NewAuction(request exchange.NewAuctionRequest, userFp string, ctx context.Context) (*domain.Session, error) {
+func (a *sessionService) NewAuction(request exchange.NewSessionRequest, userFp string, ctx context.Context) (*domain.Session, error) {
 	err := a.validateRequest(request)
 	if err != nil {
 		return nil, err
@@ -25,7 +25,7 @@ func (a *auctionService) NewAuction(request exchange.NewAuctionRequest, userFp s
 	return nil, nil
 }
 
-func (a *auctionService) validateRequest(req exchange.NewAuctionRequest) error {
+func (a *sessionService) validateRequest(req exchange.NewSessionRequest) error {
 	err := a.validate.Struct(req)
 	if err != nil {
 		var validationErrors validator.ValidationErrors
@@ -39,6 +39,6 @@ func (a *auctionService) validateRequest(req exchange.NewAuctionRequest) error {
 	return nil
 }
 
-func NewAuctionService() Auction {
-	return &auctionService{}
+func NewAuctionService() SessionServ {
+	return &sessionService{}
 }

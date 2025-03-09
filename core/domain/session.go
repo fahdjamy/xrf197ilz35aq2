@@ -8,11 +8,10 @@ import "time"
 // this table provides a grouping for bids that belong to a specific bidding event for an asset.
 type Session struct {
 	Name              string    `json:"name"`
-	AssetId           string    `json:"assetId"`
 	UserFp            string    `json:"userFp"`
-	SessionId         string    `json:"sessionId"`
+	AssetId           string    `json:"assetId"`
+	Id                string    `json:"sessionId"`
 	CreatedAt         time.Time `json:"createdAt"`
-	UpdatedAt         time.Time `json:"updatedAt"`
 	EndTime           time.Time `json:"endTime"`
 	StartTime         time.Time `json:"startTime"`
 	Status            string    `json:"status"` // ["Scheduled," "Active," "Closed," "Completed," "Cancelled."]
@@ -38,4 +37,8 @@ func IsValidAuctionType(auctionType string) bool {
 		}
 	}
 	return false
+}
+
+func NewSession() *Session {
+	return &Session{}
 }
