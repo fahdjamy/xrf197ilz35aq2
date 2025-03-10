@@ -18,9 +18,9 @@ redis:
 postgres:
   port: 5733
   sslMode: true
-  host: localhost
   readTimeout: 20s
+  user: "postgres"
+  host: "localhost"
   writeTimeout: 30s
-  user: xrf-q2-bid
-  password: krs1krs1
-  databaseName: ilz-q2-bid
+  password: "postgres"
+  databaseName: "xrf-q2-bid"
