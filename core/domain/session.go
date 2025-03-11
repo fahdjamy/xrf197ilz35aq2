@@ -7,22 +7,22 @@ import "time"
 // Bids and asks (offers) are placed and matched within a trading session.
 // this table provides a grouping for bids that belong to a specific bidding event for an asset.
 type Session struct {
-	Name              string    `json:"name"`
-	UserFp            string    `json:"userFp"`
-	AssetId           string    `json:"assetId"`
-	Id                string    `json:"sessionId"`
-	CreatedAt         time.Time `json:"createdAt"`
-	EndTime           time.Time `json:"endTime"`
-	StartTime         time.Time `json:"startTime"`
-	Status            string    `json:"status"` // ["Scheduled," "Active," "Closed," "Completed," "Cancelled."]
-	CurrentHighestBid string    `json:"currentHighestBid"`
+	Id                int64     `json:"sessionId"  db:"id"`
+	UserFp            string    `json:"userFp"  db:"user_fp"`
+	Name              string    `json:"name" db:"session_name"`
+	AssetId           string    `json:"assetId"  db:"asset_id"`
+	CreatedAt         time.Time `json:"createdAt"  db:"created_at"`
+	EndTime           time.Time `json:"endTime"   db:"end_time"`
+	StartTime         time.Time `json:"startTime"   db:"start_time"`
+	Status            string    `json:"status" db:"session_status"` // ["Scheduled," "Active," "Closed," "Completed," "Cancelled."]
+	CurrentHighestBid string    `json:"currentHighestBid"  db:"current_highest_bid"`
 	// defines the format/rules of the auction. Different auction types have different bidding mechanisms & strategies.
-	ActionType string `json:"actionType"`
+	ActionType string `json:"auctionType"  db:"auction_type"`
 	// Allows asset owners to set a minimum value they are willing to accept
-	ReservePrice float64 `json:"reservePrice"` // The minimum price the product must reach for a sale to occur.
-	AutoExecute  bool    `json:"autoExecute"`  // seal asset if true and contract holds plus bis rules.
+	ReservePrice float64 `json:"reservePrice" db:"reserve_price"` // The minimum price the product must reach for a sale to occur.
+	AutoExecute  bool    `json:"autoExecute" db:"auto_execute"`   // seal asset if true and contract holds plus bis rules.
 	// The bidIncrementAmount is the min amount by w/c a new bid must exceed the currentHighestBid. For EnglishAuction/ascending auctions
-	BidIncrementAmount float64 `json:"bidIncrementAmount"`
+	BidIncrementAmount float64 `json:"bidIncrementAmount" db:"bid_increment_amount"`
 }
 
 func IsValidAuctionType(auctionType string) bool {

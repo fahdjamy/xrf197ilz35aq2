@@ -28,7 +28,7 @@ func (ses *sessionRepository) Create(session *domain.Session, ctx context.Contex
 
 	err = conn.QueryRow(ctx, // RETURNING id: This tells PostgresSQL to return the value of the id column after insertion
 		`
-INSERT INTO  sessions (name, user_fp, asset_id, created_at, end_time, start_time, status,
+INSERT INTO  sessions (session_name, user_fp, asset_id, created_at, end_time, start_time, status,
                        current_highest_bid, auction_type, reserve_price, auto_execute, bid_increment_amount)
 VALUES ($1, $2, $3,  $4, $5, $6, $7, $8, $9, $10, $11,  $12)
 RETURNING id
