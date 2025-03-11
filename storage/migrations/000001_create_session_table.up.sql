@@ -15,8 +15,7 @@ CREATE TYPE session_status AS ENUM (
     'Scheduled'
 );
 
-CREATE TABLE IF NOT EXISTS bid_session
-(
+CREATE TABLE IF NOT EXISTS bid_session (
     id                   SERIAL PRIMARY KEY,
     auto_execute         BOOLEAN          NOT NULL,
     user_fp              VARCHAR(255)     NOT NULL,
