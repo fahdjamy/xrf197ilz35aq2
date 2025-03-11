@@ -5,19 +5,21 @@ import (
 	"errors"
 	"fmt"
 	"github.com/go-playground/validator/v10"
+	"log/slog"
 	"xrf197ilz35aq2/core/domain"
 	"xrf197ilz35aq2/internal/exchange"
 )
 
 type SessionServ interface {
-	NewAuction(request exchange.NewSessionRequest, userFp string, ctx context.Context) (*domain.Session, error)
+	CreateSession(request exchange.NewSessionRequest, userFp string, ctx context.Context) (*domain.Session, error)
 }
 
 type sessionService struct {
 	validate *validator.Validate
+	log      slog.Logger
 }
 
-func (a *sessionService) NewAuction(request exchange.NewSessionRequest, userFp string, ctx context.Context) (*domain.Session, error) {
+func (a *sessionService) CreateSession(request exchange.NewSessionRequest, userFp string, ctx context.Context) (*domain.Session, error) {
 	err := a.validateRequest(request)
 	if err != nil {
 		return nil, err
@@ -39,6 +41,9 @@ func (a *sessionService) validateRequest(req exchange.NewSessionRequest) error {
 	return nil
 }
 
-func NewAuctionService() SessionServ {
-	return &sessionService{}
+func NewSessionService(validate *validator.Validate, log slog.Logger) SessionServ {
+	return &sessionService{
+		log:      log,
+		validate: validate,
+	}
 }

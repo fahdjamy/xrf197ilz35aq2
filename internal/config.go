@@ -69,7 +69,7 @@ func NewConfig(env string) (*Config, error) {
 			configErr = fmt.Errorf("error reading config file: %w :: env=%s", err, env)
 			return
 		}
-		dbURL, dbURLExists := os.LookupEnv("XRF_BIDDING_PG_DB_URL")
+		dbURL, dbURLExists := os.LookupEnv("XRF_Q2_BID_PG_DB_URL")
 		if dbURLExists {
 			config.Postgres.DatabaseURL = dbURL
 			return
