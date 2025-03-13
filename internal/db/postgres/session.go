@@ -61,7 +61,42 @@ RETURNING id
 }
 
 func (ses *sessionRepository) FindById(sessionId string, ctx context.Context) (*domain.Session, error) {
-	panic("implement me")
+	session := &domain.Session{}
+	err := ses.dbPool.QueryRow(ctx, `
+SELECT id, 
+       auto_execute, 
+       user_fp, 
+       asset_id,
+       status, 
+       session_name, 
+       reserve_price,
+       auction_type,
+       end_time,
+       start_time,
+       created_at,
+       current_highest_bid,
+       bid_increment_amount
+FROM sessions
+WHERE id = $1`, sessionId).Scan(
+		&session.Id,
+		&session.AutoExecute,
+		&session.UserFp,
+		&session.AssetId,
+		&session.Status,
+		&session.Name,
+		&session.ReservePrice,
+		&session.ActionType,
+		&session.EndTime,
+		&session.StartTime,
+		&session.CreatedAt,
+		&session.CurrentHighestBid,
+		&session.BidIncrementAmount,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find session by id: %w", err)
+	}
+
+	return session, nil
 }
 
 func (ses *sessionRepository) FindByAssetId(assetId string, ctx context.Context) (*domain.Session, error) {
