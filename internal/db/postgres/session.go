@@ -111,6 +111,7 @@ WHERE asset_id = $1
 	if err != nil {
 		return nil, fmt.Errorf("failed to find sessions by asset id: %w", err)
 	}
+	defer rows.Close()
 	var sessions []domain.Session
 	for rows.Next() {
 		var session domain.Session

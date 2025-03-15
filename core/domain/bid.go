@@ -1,6 +1,9 @@
 package domain
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 const (
 	PendingBid  = "PENDING"
@@ -9,25 +12,37 @@ const (
 )
 
 type Bid struct {
-	UserFp    string    `json:"userFp"`
-	Price     float64   `json:"price"`
-	Placed    time.Time `json:"placedAt"`
-	AssetId   string    `json:"assetId"`
-	Accepted  bool      `json:"accepted"`
-	Status    string    `json:"status"`
-	SessionId string    `json:"sessionId"`
+	Id        int64     `json:"bidId" db:"id"`
+	Price     float64   `json:"price"  db:"price"`
+	AssetId   string    `json:"assetId"  db:"asset_id"`
+	Status    string    `json:"status"  db:"bid_status"`
+	Accepted  bool      `json:"accepted"  db:"accepted"`
+	UserFp    string    `json:"placedBy"  db:"placed_by"`
+	SessionId int64     `json:"sessionId"  db:"session_id"`
+	Placed    time.Time `json:"placedAt"  db:"placed_at"`
+	LastUntil time.Time `json:"lastUntil"  db:"last_until"`
 }
 
-func NewBid(userFp string, price float64, assetId string) *Bid {
+func NewBid(userFp string, price float64, assetId string, lastUntil time.Time, sessionId int64) (*Bid, error) {
 	now := time.Now()
-	return &Bid{
-		Placed:   now,
-		UserFp:   userFp,
-		Price:    price,
-		AssetId:  assetId,
-		Accepted: false,
-		Status:   PendingBid,
+	if isNotValidLastingTime(lastUntil) {
+		return nil, fmt.Errorf("lasting time %s is not a valid lasting time", lastUntil)
 	}
+	return &Bid{
+		Placed:    now,
+		Price:     price,
+		Accepted:  false,
+		UserFp:    userFp,
+		AssetId:   assetId,
+		SessionId: sessionId,
+		LastUntil: lastUntil,
+		Status:    PendingBid,
+	}, nil
+}
+
+func isNotValidLastingTime(lastUntil time.Time) bool {
+	now := time.Now()
+	return lastUntil.Before(now)
 }
 
 func IsValidBidStatus(status string) bool {
