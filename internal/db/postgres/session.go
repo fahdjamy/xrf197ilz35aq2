@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"github.com/jackc/pgx/v5"
 	"log/slog"
+	"time"
 	"xrf197ilz35aq2/core/domain"
 )
 
 type SessionRepository interface {
 	Create(session *domain.Session, ctx context.Context) (int64, error)
 	FindById(sessionId string, ctx context.Context) (*domain.Session, error)
+	FindActiveSession(assetId string, ctx context.Context) (*domain.Session, error)
 	FindAllByAssetId(assetId string, ctx context.Context) ([]domain.Session, error)
 }
 
@@ -135,6 +137,51 @@ WHERE asset_id = $1
 		sessions = append(sessions, session)
 	}
 	return sessions, nil
+}
+
+func (ses *sessionRepository) FindActiveSession(assetId string, ctx context.Context) (*domain.Session, error) {
+	now := time.Now()
+	sql := `
+SELECT id, auto_execute, user_fp, asset_id, status, session_name, reserve_price, auction_type, end_time, created_at, 
+	current_highest_bid, bid_increment_amount
+FROM sessions
+WHERE asset_id = $1
+AND end_time > $2`
+
+	rows, err := ses.dbPool.Query(ctx, sql, assetId, now)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find active session: %w", err)
+	}
+	defer rows.Close()
+	var sessions []domain.Session
+	for rows.Next() {
+		var session domain.Session
+		err = rows.Scan(
+			&session.Id,
+			&session.AutoExecute,
+			&session.UserFp,
+			&session.AssetId,
+			&session.Status,
+			&session.Name,
+			&session.ReservePrice,
+			&session.ActionType,
+			&session.EndTime,
+			&session.CreatedAt,
+			&session.CurrentHighestBid,
+			&session.BidIncrementAmount,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("error scanning of the sessions: %w", err)
+		}
+		sessions = append(sessions, session)
+	}
+	if len(sessions) == 0 {
+		return nil, nil
+	}
+	if len(sessions) > 1 {
+		return nil, fmt.Errorf("invalid session state, found more than one active sessions for the asset")
+	}
+	return &sessions[0], nil
 }
 
 func NewSessionRepository(log slog.Logger, dbPool *pgx.Conn) SessionRepository {
