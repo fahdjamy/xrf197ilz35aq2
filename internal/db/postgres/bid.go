@@ -9,7 +9,7 @@ import (
 )
 
 type BidRepository interface {
-	CreateBid(request exchange.BidRequest, userFp string, assetId string, ctx context.Context) (*domain.Bid, error)
+	CreateBid(request exchange.BidRequest, userFp string, sessionId int64, ctx context.Context) (*domain.Bid, error)
 }
 
 type bidRepository struct {
@@ -17,8 +17,8 @@ type bidRepository struct {
 	dbPool *pgx.Conn
 }
 
-func (repo *bidRepository) CreateBid(request exchange.BidRequest, userFp string, assetId string, ctx context.Context) (*domain.Bid, error) {
-	newBid, err := domain.NewBid(userFp, request.Amount, assetId, request.LastUntil, request.SessionId)
+func (repo *bidRepository) CreateBid(request exchange.BidRequest, userFp string, sessionId int64, ctx context.Context) (*domain.Bid, error) {
+	newBid, err := domain.NewBid(userFp, request.Amount, request.AssetId, request.LastUntil, sessionId)
 	if err != nil {
 		return nil, err
 	}

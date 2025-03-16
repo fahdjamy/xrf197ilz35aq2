@@ -7,6 +7,6 @@ type BidRequest struct {
 	Status    string    `json:"status"`
 	UserFp    string    `json:"placedBy"`
 	Placed    time.Time `json:"placedAt"`
-	SessionId int64     `json:"sessionId"`
+	AssetId   string    `json:"assetId"`
 	LastUntil time.Time `json:"lastUntil"`
 }
