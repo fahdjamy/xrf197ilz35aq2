@@ -10,8 +10,8 @@ import (
 )
 
 type BidRepository interface {
-	CreateBid(request exchange.BidRequest, userFp string, sessionId int64, ctx context.Context) (*domain.Bid, error)
 	BatchCreateBids(bids []exchange.BidRequest, userFp string, sessionId int64, ctx context.Context) error
+	CreateBid(request exchange.BidRequest, userFp string, sessionId int64, ctx context.Context) (*domain.Bid, error)
 }
 
 type bidRepository struct {
@@ -25,7 +25,7 @@ func (repo *bidRepository) CreateBid(request exchange.BidRequest, userFp string,
 		return nil, err
 	}
 	sql := `
-INSERT INTO bid (amount, asset_id, bid_status, accepted, placed_by, placed_at, last_until, session_id)
+INSERT INTO bid (id, amount, asset_id, bid_status, accepted, placed_by, placed_at, last_until, session_id)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 RETURNING id`
 	var id int64
@@ -61,9 +61,9 @@ func (repo *bidRepository) BatchCreateBids(bids []exchange.BidRequest, userFp st
 			return err
 		}
 		batch.Queue(`
-INSERT INTO bid (amount, asset_id, bid_status, accepted, placed_by, placed_at, last_until, session_id)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-RETURNING id`,
+INSERT INTO bid (id, amount, asset_id, bid_status, accepted, placed_by, placed_at, last_until, session_id)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+			newBid.Id,
 			newBid.Amount,
 			newBid.AssetId,
 			newBid.Status,
