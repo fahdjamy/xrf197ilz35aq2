@@ -3,7 +3,9 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"log/slog"
 	"sync"
 	"xrf197ilz35aq2/internal"
 )
@@ -27,9 +29,19 @@ func (pg *Postgres) Close() {
 	pg.Pool.Close() // ignoring error returned
 }
 
-func NewPGConnection(pgConfig internal.PostgresConfig, ctx context.Context) (pool *Postgres, err error) {
+func NewPGConnection(ctx context.Context, pgConfig internal.PostgresConfig, log slog.Logger) (pool *Postgres, err error) {
 	pgOnce.Do(func() {
-		dbPool, err = pgxpool.New(ctx, pgConfig.DatabaseURL)
+		pgxPoolConfig, err := pgxpool.ParseConfig(pgConfig.DatabaseURL)
+		pgxPoolConfig.MaxConns = 21
+		pgxPoolConfig.BeforeConnect = func(ctx context.Context, config *pgx.ConnConfig) error {
+			log.Info("Connecting to database", "url", pgConfig.DatabaseURL)
+			return nil
+		}
+		if err != nil {
+			dbErr = fmt.Errorf("pgxpool.ParseConfig failure: %w", err)
+			return
+		}
+		dbPool, err = pgxpool.NewWithConfig(ctx, pgxPoolConfig)
 		if err != nil {
 			dbErr = fmt.Errorf("failed to connect to 'database': %w", err)
 			return
