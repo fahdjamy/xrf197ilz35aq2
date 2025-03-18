@@ -5,13 +5,16 @@ import (
 	"fmt"
 	"github.com/jackc/pgx/v5"
 	"log/slog"
+	"strings"
 	"xrf197ilz35aq2/core/domain"
+	"xrf197ilz35aq2/internal/db/postgres/dao"
 	"xrf197ilz35aq2/internal/exchange"
 )
 
 type BidRepository interface {
-	BatchCreateBids(bids []exchange.BidRequest, userFp string, sessionId int64, ctx context.Context) error
-	CreateBid(request exchange.BidRequest, userFp string, sessionId int64, ctx context.Context) (*domain.Bid, error)
+	BatchCreateBids(ctx context.Context, bids []exchange.BidRequest, userFp string, sessionId int64) (int64, error)
+	CreateBid(ctx context.Context, request exchange.BidRequest, userFp string, sessionId int64) (*domain.Bid, error)
+	CreateBidsCopyFrom(ctx context.Context, bids []exchange.BidRequest, userFp string, sessionId int64) (int64, error)
 }
 
 type bidRepository struct {
@@ -19,7 +22,7 @@ type bidRepository struct {
 	dbPool *pgx.Conn
 }
 
-func (repo *bidRepository) CreateBid(request exchange.BidRequest, userFp string, sessionId int64, ctx context.Context) (*domain.Bid, error) {
+func (repo *bidRepository) CreateBid(ctx context.Context, request exchange.BidRequest, userFp string, sessionId int64) (*domain.Bid, error) {
 	newBid, err := domain.NewBid(userFp, request.Amount, request.AssetId, request.LastUntil, sessionId)
 	if err != nil {
 		return nil, err
@@ -35,7 +38,7 @@ RETURNING id`
 		newBid.Status,
 		newBid.Accepted,
 		newBid.UserFp,
-		newBid.Placed,
+		newBid.PlacedAt,
 		newBid.LastUntil,
 		newBid.SessionId,
 	).Scan(&id)
@@ -47,10 +50,10 @@ RETURNING id`
 	return newBid, nil
 }
 
-func (repo *bidRepository) BatchCreateBids(bids []exchange.BidRequest, userFp string, sessionId int64, ctx context.Context) error {
+func (repo *bidRepository) BatchCreateBids(ctx context.Context, bids []exchange.BidRequest, userFp string, sessionId int64) (int64, error) {
 	tx, err := repo.dbPool.Begin(ctx)
 	if err != nil {
-		return fmt.Errorf("error starting transaction for batch create bids: %w", err)
+		return 0, fmt.Errorf("error starting transaction for batch create bids: %w", err)
 	}
 	defer tx.Rollback(ctx) //Rollback on error
 
@@ -58,7 +61,7 @@ func (repo *bidRepository) BatchCreateBids(bids []exchange.BidRequest, userFp st
 	for _, bid := range bids {
 		newBid, err := domain.NewBid(userFp, bid.Amount, bid.AssetId, bid.LastUntil, sessionId)
 		if err != nil {
-			return err
+			return 0, err
 		}
 		batch.Queue(`
 INSERT INTO bid (id, amount, asset_id, bid_status, accepted, placed_by, placed_at, last_until, session_id)
@@ -69,7 +72,7 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
 			newBid.Status,
 			newBid.Accepted,
 			newBid.UserFp,
-			newBid.Placed,
+			newBid.PlacedAt,
 			newBid.LastUntil,
 			newBid.SessionId)
 	}
@@ -80,10 +83,14 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
 	for i := 0; i < len(bids); i++ {
 		_, err := results.Exec()
 		if err != nil {
-			return fmt.Errorf("error executing batch query %d: %w", i, err)
+			return 0, fmt.Errorf("error executing batch query %d: %w", i, err)
 		}
 	}
-	return tx.Commit(ctx)
+	err = tx.Commit(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("error committing batch create bids: %w", err)
+	}
+	return int64(len(bids)), nil
 }
 
 func NewBidService(dbPool *pgx.Conn, log slog.Logger) BidRepository {
