@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/jackc/pgx/v5"
 	"log/slog"
-	"strings"
 	"xrf197ilz35aq2/core/domain"
 	"xrf197ilz35aq2/internal/db/postgres/dao"
 	"xrf197ilz35aq2/internal/exchange"
@@ -51,6 +50,7 @@ RETURNING id`
 }
 
 func (repo *bidRepository) BatchCreateBids(ctx context.Context, bids []exchange.BidRequest, userFp string, sessionId int64) (int64, error) {
+	repo.log.Info(fmt.Sprintf("batch creating bids using, rowLen=%d", len(bids)))
 	tx, err := repo.dbPool.Begin(ctx)
 	if err != nil {
 		return 0, fmt.Errorf("error starting transaction for batch create bids: %w", err)
@@ -91,6 +91,35 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
 		return 0, fmt.Errorf("error committing batch create bids: %w", err)
 	}
 	return int64(len(bids)), nil
+}
+
+func (repo *bidRepository) CreateBidsCopyFrom(ctx context.Context, bids []exchange.BidRequest, userFp string, sessionId int64) (int64, error) {
+	// The pgx.CopyFrom method provides a highly efficient way to bulk load data into a PostgresSQL table by leveraging the PostgresSQL COPY protocol
+	// This method is significantly faster than executing individual INSERT statements or even using batched inserts for large datasets
+	repo.log.Info(fmt.Sprintf("creating bulk bids using CopyFrom, rowLen=%d", len(bids)))
+	rowSrc := pgx.CopyFromSlice(len(bids), func(i int) ([]interface{}, error) {
+		newBid, err := domain.NewBid(userFp, bids[i].Amount, bids[i].AssetId, bids[i].LastUntil, sessionId)
+		if err != nil {
+			return nil, err
+		}
+		return []any{
+			newBid.Id,
+			newBid.Accepted,
+			newBid.Status,
+			newBid.AssetId,
+			newBid.Amount,
+			newBid.UserFp,
+			newBid.SessionId,
+			newBid.LastUntil,
+			newBid.PlacedAt,
+		}, nil
+	})
+	columnNames := dao.GetBidColumnName()
+	count, err := repo.dbPool.CopyFrom(ctx, pgx.Identifier{dao.BidTableName}, columnNames, rowSrc)
+	if err != nil {
+		return 0, fmt.Errorf("error bulk copying/creating bid rows: %w", err)
+	}
+	return count, nil
 }
 
 func NewBidService(dbPool *pgx.Conn, log slog.Logger) BidRepository {
