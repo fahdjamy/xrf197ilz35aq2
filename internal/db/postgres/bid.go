@@ -11,8 +11,8 @@ import (
 
 type BidRepository interface {
 	CreateBid(ctx context.Context, request domain.Bid) (int64, error)
-	BatchCreateBids(ctx context.Context, bids []domain.Bid, userFp string, sessionId int64) (int64, error)
-	CreateBidsCopyFrom(ctx context.Context, bids []domain.Bid, userFp string, sessionId int64) (int64, error)
+	BatchCreateBids(ctx context.Context, bids []domain.Bid) (int64, error)
+	CreateBidsCopyFrom(ctx context.Context, bids []domain.Bid) (int64, error)
 }
 
 type bidRepository struct {
@@ -44,7 +44,7 @@ RETURNING id`
 	return id, nil
 }
 
-func (repo *bidRepository) BatchCreateBids(ctx context.Context, bids []domain.Bid, userFp string, sessionId int64) (int64, error) {
+func (repo *bidRepository) BatchCreateBids(ctx context.Context, bids []domain.Bid) (int64, error) {
 	repo.log.Info(fmt.Sprintf("batch creating bids using, rowLen=%d", len(bids)))
 	tx, err := repo.dbPool.Begin(ctx)
 	if err != nil {
@@ -84,25 +84,22 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
 	return int64(len(bids)), nil
 }
 
-func (repo *bidRepository) CreateBidsCopyFrom(ctx context.Context, bids []domain.Bid, userFp string, sessionId int64) (int64, error) {
+func (repo *bidRepository) CreateBidsCopyFrom(ctx context.Context, bids []domain.Bid) (int64, error) {
 	// The pgx.CopyFrom method provides a highly efficient way to bulk load data into a PostgresSQL table by leveraging the PostgresSQL COPY protocol
 	// This method is significantly faster than executing individual INSERT statements or even using batched inserts for large datasets
 	repo.log.Info(fmt.Sprintf("creating bulk bids using CopyFrom, rowLen=%d", len(bids)))
 	rowSrc := pgx.CopyFromSlice(len(bids), func(i int) ([]interface{}, error) {
-		newBid, err := domain.NewBid(userFp, bids[i].Amount, bids[i].AssetId, bids[i].LastUntil, sessionId)
-		if err != nil {
-			return nil, err
-		}
+		bid := bids[i]
 		return []any{
-			newBid.Id,
-			newBid.Accepted,
-			newBid.Status,
-			newBid.AssetId,
-			newBid.Amount,
-			newBid.UserFp,
-			newBid.SessionId,
-			newBid.LastUntil,
-			newBid.PlacedAt,
+			bid.Id,
+			bid.Accepted,
+			bid.Status,
+			bid.AssetId,
+			bid.Amount,
+			bid.UserFp,
+			bid.SessionId,
+			bid.LastUntil,
+			bid.PlacedAt,
 		}, nil
 	})
 	columnNames := dao.GetBidColumnName()
