@@ -20,7 +20,7 @@ func main() {
 		return
 	}
 
-	logger, err := setupLogger(env, config.Log)
+	logger, err := internal.SetupLogger(env, config.Log)
 	if err != nil {
 		fmt.Printf("Failed to setup logger: %v\n", err)
 		return

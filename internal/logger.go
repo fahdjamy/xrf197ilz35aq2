@@ -1,4 +1,4 @@
-package main
+package internal
 
 import (
 	"fmt"
@@ -9,7 +9,6 @@ import (
 	"os"
 	"strings"
 	"sync"
-	"xrf197ilz35aq2/internal"
 )
 
 var (
@@ -17,14 +16,14 @@ var (
 	sLogger *slog.Logger
 )
 
-func setupLogger(env string, config internal.LogConfig) (*slog.Logger, error) {
+func SetupLogger(env string, config LogConfig) (*slog.Logger, error) {
 	lock.Lock()
 	defer lock.Unlock()
 
 	var logLevel = new(slog.LevelVar)
 	opts := slog.HandlerOptions{Level: logLevel, AddSource: true}
 
-	if strings.ToUpper(env) == internal.ProductionEnv {
+	if strings.ToUpper(env) == ProductionEnv {
 		fileOutput := config.OutputFile
 		logFileWriter := &lumberjack.Logger{
 			Filename:   fileOutput,
