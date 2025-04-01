@@ -26,7 +26,7 @@ func (worker *BidWorker) ProcessCachedBidsFromQueue(ctx context.Context, queue s
 		// 1. Fetch bids from cache
 		result, err := worker.client.BLPop(ctx, worker.timeout, queue).Result()
 		if err != nil {
-			worker.log.Warn("Error fetching bid from queue: %v", err)
+			worker.log.Warn("Error fetching bid from queue", "err", err)
 			time.Sleep(worker.sleep) // Simple backoff
 			continue
 		}
@@ -41,7 +41,7 @@ func (worker *BidWorker) ProcessCachedBidsFromQueue(ctx context.Context, queue s
 		for _, cachedBid := range result {
 			var bid domain.Bid
 			if err := json.Unmarshal([]byte(cachedBid), &bid); err != nil {
-				worker.log.Error("Error unmarshalling bid from queue: %v", err)
+				worker.log.Error("Error unmarshalling bid from queue: %v", "err", err)
 				break
 			}
 			bids = append(bids, bid)
@@ -57,14 +57,14 @@ func (worker *BidWorker) ProcessCachedBidsFromQueue(ctx context.Context, queue s
 		// 3. Store/Save bids permanently in the DB
 		count, err := worker.bidRepo.CreateBidsCopyFrom(ctx, bids)
 		if err != nil {
-			worker.log.Error("Error creating bids: %v", err)
+			worker.log.Error("Error creating bids", "err", err)
 			time.Sleep(worker.sleep)
 			continue
 		}
 
 		// 4. Log successfully stored bids
 		if count != int64(len(bids)) {
-			worker.log.Warn("Error creating bids: savedBidsCount=%d of bids cachedCount=%d", count, len(bids))
+			worker.log.Warn("Error creating bids: savedBidsCount=%d of bids cachedCount=%d", "count", len(bids))
 		} else {
 			worker.log.Info(fmt.Sprintf("Successfully saved %d bids all from cache", count))
 		}

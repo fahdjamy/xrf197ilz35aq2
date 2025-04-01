@@ -31,7 +31,7 @@ func main() {
 
 	err = validate.RegisterValidation("auctionType", validators.AuctionTypeValidator)
 	if err != nil {
-		logger.Error("Register auctionType validation error: %s\n", err)
+		logger.Error("Register auctionType validation error: %s\n", "err", err)
 		return
 	}
 	logger.Info("starting xrf197ilz35aq")
