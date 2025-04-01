@@ -3,8 +3,8 @@ module xrf197ilz35aq2
 go 1.24.0
 
 require (
-	github.com/go-playground/validator/v10 v10.25.0
-	github.com/jackc/pgx/v5 v5.7.3
+	github.com/go-playground/validator/v10 v10.26.0
+	github.com/jackc/pgx/v5 v5.7.4
 	github.com/redis/go-redis/v9 v9.7.3
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -22,7 +22,7 @@ require (
 	github.com/lmittmann/tint v1.0.7 // indirect
 	github.com/rogpeppe/go-internal v1.14.1 // indirect
 	golang.org/x/crypto v0.36.0 // indirect
-	golang.org/x/net v0.37.0 // indirect
+	golang.org/x/net v0.38.0 // indirect
 	golang.org/x/sys v0.31.0 // indirect
 	golang.org/x/text v0.23.0 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
