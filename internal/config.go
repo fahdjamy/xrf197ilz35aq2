@@ -18,6 +18,30 @@ type LogConfig struct {
 	OutputFile string `yaml:"outputFile"`
 }
 
+type TimescaleDBConfig struct {
+	Port         int           `yml:"port"`
+	Host         string        `yml:"host"`
+	User         string        `yml:"user"`
+	Password     string        `yml:"password"`
+	SSLMode      string        `yml:"sslMode"`
+	ReadTimeout  time.Duration `yml:"readTimeout"`
+	WriteTimeout time.Duration `yml:"writeTimeout"`
+	DatabaseName string        `yml:"databaseName"`
+	Retries      int           `yml:"connectRetries"`
+}
+
+func (tsDB *TimescaleDBConfig) GetDdURL() (string, error) {
+	conn := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s",
+		tsDB.User,
+		tsDB.Password,
+		tsDB.Host,
+		tsDB.Port,
+		tsDB.DatabaseName,
+		tsDB.SSLMode,
+	)
+	return conn, nil
+}
+
 type PostgresConfig struct {
 	Port         int           `yml:"port"`
 	Host         string        `yml:"host"`
@@ -45,9 +69,10 @@ type RedisConfig struct {
 }
 
 type Config struct {
-	Postgres PostgresConfig `yml:"postgres"`
-	Redis    RedisConfig    `yml:"redis"`
-	Log      LogConfig      `yml:"log"`
+	Log         LogConfig         `yml:"log"`
+	Redis       RedisConfig       `yml:"redis"`
+	Postgres    PostgresConfig    `yml:"postgres"`
+	TimescaleDB TimescaleDBConfig `yml:"timescaledb"`
 }
 
 var (

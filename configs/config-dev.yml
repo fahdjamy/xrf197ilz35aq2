@@ -23,4 +23,15 @@ postgres:
   host: "localhost"
   writeTimeout: 30s
   password: "postgres"
-  databaseName: "xrf-q2-bid"
+  databaseName: "xrf-q2-pg-bid"
+
+timescaledb:
+  port: 5733
+  sslMode: true
+  user: "postgres"
+  readTimeout: 20s
+  host: "localhost"
+  writeTimeout: 30s
+  connectRetries: 2
+  password: "postgres"
+  databaseName: "xrf-q2-ts-bid"
