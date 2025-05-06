@@ -13,15 +13,17 @@ import (
 )
 
 var (
-	dbPool                 *pgxpool.Pool
-	pgInstance             *Postgres
-	pgOnce                 sync.Once
-	redisClient            *redis.Client
-	redisOnce              sync.Once
-	pgInitializationErr    error // Global variable to store initialization errors
-	redisInitializationErr error
+	dbPool        *pgxpool.Pool
+	pgInstance    *Postgres
+	pgOnce        sync.Once
+	redisClient   *redis.Client
+	redisOnce     sync.Once
+	tsInstance    *TimescaleDB
+	timescaleOnce sync.Once
+	// Global variable to store initialization errors
+	pgInitializationErr    error
 	tsInitializationErr    error
-	timescaleOnce          sync.Once
+	redisInitializationErr error
 )
 
 type Postgres struct {
@@ -34,6 +36,14 @@ func (pg *Postgres) Ping(ctx context.Context) error {
 
 func (pg *Postgres) Close() {
 	pg.Pool.Close() // ignoring error returned
+}
+
+type TimescaleDB struct {
+	Pool *pgxpool.Pool
+}
+
+func (ts *TimescaleDB) Ping(ctx context.Context) error {
+	return ts.Pool.Ping(ctx)
 }
 
 func NewPGConnection(ctx context.Context, dbUrl string, log slog.Logger) (pool *Postgres, err error) {
@@ -93,10 +103,31 @@ func NewRedisClient(redisConfig internal.RedisConfig, ctx context.Context) (*red
 	return redisClient, nil
 }
 
-type TimescaleDB struct {
-	Pool *pgxpool.Pool
-}
+func GetTimescaleDBConn(ctx context.Context, dbUrl string, log slog.Logger) (*TimescaleDB, error) {
+	timescaleOnce.Do(func() {
+		pgxPoolConfig, err := pgxpool.ParseConfig(dbUrl)
+		pgxPoolConfig.MaxConns = 21
+		pgxPoolConfig.BeforeConnect = func(ctx context.Context, config *pgx.ConnConfig) error {
+			log.Info("Connecting to database", "url", dbUrl)
+			return nil
+		}
+		if err != nil {
+			tsInitializationErr = fmt.Errorf("pgxpool.ParseConfig failure: %w", err)
+			return
+		}
+		dbPool, err = pgxpool.NewWithConfig(ctx, pgxPoolConfig)
+		if err != nil {
+			tsInitializationErr = fmt.Errorf("failed to connect to 'database': %w", err)
+			return
+		}
+	})
 
-func (ts *TimescaleDB) Ping(ctx context.Context) error {
-	return ts.Pool.Ping(ctx)
+	// Important: Check the global error variable *after* once.Do.
+	if tsInitializationErr != nil {
+		return nil, tsInitializationErr // Return the stored error
+	}
+
+	tsInstance = &TimescaleDB{Pool: dbPool}
+
+	return tsInstance, nil
 }
