@@ -34,8 +34,8 @@ func OpenFromRoot(relativePath string) (*os.File, error) {
 	// Get the directory of the *current* file (the file containing this function).
 	thisDir := filepath.Dir(filename)
 
-	// Find project root by going up from thisDir as many times as needed.
-	//  This part is project-structure dependent.  Here are a few examples:
+	// Find the project root by going up from thisDir as many times as needed.
+	//  This part is project-structure-dependent.  Here are a few examples:
 
 	// I.E: the internal package `internal` is directly under the root:
 	rootDir := filepath.Dir(thisDir) // Go one level up.
@@ -49,4 +49,21 @@ func OpenFromRoot(relativePath string) (*os.File, error) {
 		return nil, err
 	}
 	return file, nil
+}
+
+func IsDir(relativePath string) (bool, error) {
+	_, filename, _, ok := runtime.Caller(0) // Get caller file info. 0 = current function
+	if !ok {
+		return false, fmt.Errorf("failed to get caller information")
+	}
+	thisDir := filepath.Dir(filename)
+	rootDir := filepath.Dir(thisDir)
+	absolutePath := filepath.Join(rootDir, relativePath)
+
+	fileInfo, err := os.Stat(absolutePath)
+	if err != nil {
+		return false, err
+	}
+
+	return fileInfo.IsDir(), nil
 }

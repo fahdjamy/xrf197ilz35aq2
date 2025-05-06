@@ -23,7 +23,7 @@ type BidWorker struct {
 // Start this in a `main` function, likely as a goroutine.
 func (worker *BidWorker) ProcessCachedBidsFromQueue(ctx context.Context, queue string) error {
 	for {
-		// 1. Fetch bids from cache
+		// 1. Fetch bids from a cache
 		result, err := worker.client.BLPop(ctx, worker.timeout, queue).Result()
 		if err != nil {
 			worker.log.Warn("Error fetching bid from queue", "err", err)
