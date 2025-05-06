@@ -6,7 +6,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"log/slog"
 	"xrf197ilz35aq2/core/domain"
-	"xrf197ilz35aq2/internal/db/postgres/dao"
+	"xrf197ilz35aq2/storage/postgres/dao"
 )
 
 type BidRepository interface {

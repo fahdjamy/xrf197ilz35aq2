@@ -8,7 +8,7 @@ import (
 	"log/slog"
 	"time"
 	"xrf197ilz35aq2/core/domain"
-	"xrf197ilz35aq2/internal/db/postgres"
+	"xrf197ilz35aq2/storage/postgres"
 )
 
 type BidWorker struct {
