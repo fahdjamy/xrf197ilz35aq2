@@ -103,10 +103,10 @@ func NewRedisClient(redisConfig internal.RedisConfig, ctx context.Context) (*red
 	return redisClient, nil
 }
 
-func GetTimescaleDBConn(ctx context.Context, dbUrl string, log slog.Logger) (*TimescaleDB, error) {
+func GetTimescaleDBConn(ctx context.Context, dbUrl string, log *slog.Logger, maxConns int32) (*TimescaleDB, error) {
 	timescaleOnce.Do(func() {
 		pgxPoolConfig, err := pgxpool.ParseConfig(dbUrl)
-		pgxPoolConfig.MaxConns = 21
+		pgxPoolConfig.MaxConns = maxConns
 		pgxPoolConfig.BeforeConnect = func(ctx context.Context, config *pgx.ConnConfig) error {
 			log.Info("Connecting to database", "url", dbUrl)
 			return nil

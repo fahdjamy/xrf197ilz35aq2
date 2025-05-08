@@ -10,7 +10,7 @@ import (
 	"xrf197ilz35aq2/internal"
 )
 
-func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
+func MigrateTimescaleTables(ctx context.Context, pool *pgxpool.Pool) error {
 	migrationsRelativePath := "storage/timescale/migrations"
 
 	dir, err := internal.IsDir(migrationsRelativePath)
