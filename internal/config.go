@@ -22,12 +22,12 @@ type TimescaleDBConfig struct {
 	Port         int           `yml:"port"`
 	Host         string        `yml:"host"`
 	User         string        `yml:"user"`
+	DatabaseName string        `yml:"name"`
 	Password     string        `yml:"password"`
-	SSLMode      string        `yml:"sslMode"`
-	ReadTimeout  time.Duration `yml:"readTimeout"`
-	WriteTimeout time.Duration `yml:"writeTimeout"`
-	DatabaseName string        `yml:"databaseName"`
-	Retries      int           `yml:"connectRetries"`
+	SSLMode      string        `yml:"ssl_mode"`
+	ReadTimeout  time.Duration `yml:"read_timeout"`
+	WriteTimeout time.Duration `yml:"write_timeout"`
+	Retries      int           `yml:"connect_retries"`
 }
 
 func (tsDB *TimescaleDBConfig) GetDdURL() (string, error) {
@@ -45,14 +45,14 @@ func (tsDB *TimescaleDBConfig) GetDdURL() (string, error) {
 type PostgresConfig struct {
 	Port         int           `yml:"port"`
 	Host         string        `yml:"host"`
+	SslMode      bool          `yml:"ssl_mode"`
 	User         string        `yml:"user"`
+	Name         string        `yml:"db_name"`
 	Retries      int           `yml:"retries"`
 	Password     string        `yml:"password"`
-	ReadTimeout  time.Duration `yml:"readTimeout"`
-	WriteTimeout time.Duration `yml:"writeTimeout"`
-	DatabaseName string        `yml:"databaseName"`
-	SSLMode      string        `yml:"sslMode"`
-	DatabaseURL  string        `yml:"databaseURL"`
+	ReadTimeout  time.Duration `yml:"read_timeout"`
+	WriteTimeout time.Duration `yml:"write_timeout"`
+	DatabaseURL  string
 }
 
 type RedisConfig struct {
@@ -60,10 +60,10 @@ type RedisConfig struct {
 	Password     string        `yaml:"password"`
 	Database     int           `yaml:"database"`
 	Protocol     int           `yaml:"protocol"`
-	MaxRetries   int           `yaml:"maxRetries"`
-	DialTimeout  time.Duration `yaml:"dialTimeout"`
-	ReadTimeout  time.Duration `yaml:"readTimeout"`
-	WriteTimeout time.Duration `yaml:"writeTimeout"`
+	MaxRetries   int           `yaml:"max_retries"`
+	DialTimeout  time.Duration `yaml:"dial_timeout"`
+	ReadTimeout  time.Duration `yaml:"read_timeout"`
+	WriteTimeout time.Duration `yaml:"write_timeout"`
 	PoolSize     int           `yaml:"poolSize"`
 	MinIdleConns int           `yaml:"minIdleConns"`
 }
@@ -124,13 +124,16 @@ func NewConfig(env string) (*Config, error) {
 }
 
 func createDBURL(pgConfig PostgresConfig) (string, error) {
-	conn := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s",
+	if pgConfig.Name == "" {
+		return "", fmt.Errorf("dataname cannot be empty")
+	}
+	conn := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%t",
 		pgConfig.User,
 		pgConfig.Password,
 		pgConfig.Host,
 		pgConfig.Port,
-		pgConfig.DatabaseName,
-		pgConfig.SSLMode,
+		pgConfig.Name,
+		pgConfig.SslMode,
 	)
 	return conn, nil
 }
@@ -145,7 +148,7 @@ func readConfiguration(file io.ReadCloser) (*Config, error) {
 	// Decode the YAML into a struct
 	var config Config
 
-	// NewDecoder returns a new decoder that reads from r (file)
+	// NewDecoder returns a new decoder that reads from r (a file)
 	decoder := yaml.NewDecoder(file)
 	err := decoder.Decode(&config)
 	if err != nil {
