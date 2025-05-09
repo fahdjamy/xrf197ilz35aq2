@@ -18,8 +18,7 @@ import (
 
 func main() {
 	env := getAppEnv()
-	config, err := internal.NewConfig(strings.ToLower(env))
-	_, err = internal.GetConfig(strings.ToLower(env))
+	config, err := internal.GetConfig(strings.ToLower(env))
 
 	if err != nil {
 		fmt.Println("failed to load config:", err)
