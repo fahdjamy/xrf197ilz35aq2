@@ -2,9 +2,11 @@ package internal
 
 import (
 	"fmt"
+	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
 	"io"
 	"os"
+	"strings"
 	"sync"
 	"time"
 )
@@ -19,19 +21,19 @@ type LogConfig struct {
 }
 
 type TimescaleDBConfig struct {
-	Port         int           `yml:"port"`
-	Host         string        `yml:"host"`
-	User         string        `yml:"user"`
-	DatabaseName string        `yml:"name"`
-	Password     string        `yml:"password"`
-	SSLMode      string        `yml:"ssl_mode"`
-	ReadTimeout  time.Duration `yml:"read_timeout"`
-	WriteTimeout time.Duration `yml:"write_timeout"`
-	Retries      int           `yml:"connect_retries"`
+	Port         int    `yml:"port"`
+	Host         string `yml:"host"`
+	User         string `yml:"user"`
+	Password     string `yml:"password"`
+	SSLMode      bool   `yml:"sslMode"`
+	ReadTimeout  int    `yml:"readTimeout"`
+	DatabaseName string `yml:"databaseName"`
+	WriteTimeout int    `yml:"writeTimeout"`
+	Retries      int    `yml:"connectRetries"`
 }
 
 func (tsDB *TimescaleDBConfig) GetDdURL() (string, error) {
-	conn := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s",
+	conn := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%t",
 		tsDB.User,
 		tsDB.Password,
 		tsDB.Host,
@@ -43,29 +45,29 @@ func (tsDB *TimescaleDBConfig) GetDdURL() (string, error) {
 }
 
 type PostgresConfig struct {
-	Port         int           `yml:"port"`
-	Host         string        `yml:"host"`
-	SslMode      bool          `yml:"ssl_mode"`
-	User         string        `yml:"user"`
-	Name         string        `yml:"db_name"`
-	Retries      int           `yml:"retries"`
-	Password     string        `yml:"password"`
-	ReadTimeout  time.Duration `yml:"read_timeout"`
-	WriteTimeout time.Duration `yml:"write_timeout"`
+	Port         int    `yml:"port"`
+	Host         string `yml:"host"`
+	User         string `yml:"user"`
+	SslMode      bool   `yml:"sslMode"`
+	Name         string `yml:"db_name"`
+	Retries      int    `yml:"retries"`
+	Password     string `yml:"password"`
+	ReadTimeout  int    `yml:"readTimeout"`
+	WriteTimeout int    `yml:"writeTimeout"`
 	DatabaseURL  string
 }
 
 type RedisConfig struct {
-	Address      string        `yaml:"address"`
-	Password     string        `yaml:"password"`
-	Database     int           `yaml:"database"`
-	Protocol     int           `yaml:"protocol"`
-	MaxRetries   int           `yaml:"max_retries"`
-	DialTimeout  time.Duration `yaml:"dial_timeout"`
-	ReadTimeout  time.Duration `yaml:"read_timeout"`
-	WriteTimeout time.Duration `yaml:"write_timeout"`
-	PoolSize     int           `yaml:"poolSize"`
-	MinIdleConns int           `yaml:"minIdleConns"`
+	Address      string `yaml:"address"`
+	Password     string `yaml:"password"`
+	Database     int    `yaml:"database"`
+	Protocol     int    `yaml:"protocol"`
+	PoolSize     int    `yaml:"poolSize"`
+	MaxRetries   int    `yaml:"maxRetries"`
+	DialTimeout  int    `yaml:"dialTimeout"`
+	ReadTimeout  int    `yaml:"readTimeout"`
+	MinIdleConns int    `yaml:"minIdleConns"`
+	WriteTimeout int    `yaml:"writeTimeout"`
 }
 
 type Config struct {
@@ -155,4 +157,35 @@ func readConfiguration(file io.ReadCloser) (*Config, error) {
 		return nil, err
 	}
 	return &config, nil
+}
+
+func GetConfig(env string) (*Config, error) {
+	// Set up viper to read the config.yaml file
+	configFilePath := fmt.Sprintf("config-%s.yaml", env)
+	viper.SetConfigName(configFilePath)
+	viper.AddConfigPath("./configs")
+	viper.SetConfigType("yaml")
+
+	// AutomaticEnv check for an environment variable any time a viper.Get request is made.
+
+	// Rules: viper checks for an environment variable w/ a name matching the key uppercased and prefixed with the EnvPrefix if set.
+	viper.AutomaticEnv()
+	viper.SetEnvPrefix("XRF_Q2") // will be uppercased automatically
+	// this is useful e.g., want to use . in Get() calls, but environmental variables are to use _ delimiters (e.g., app.port -> APP_PORT)
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+
+	// Read the config file
+	err := viper.ReadInConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	appConfig := Config{}
+
+	err = viper.Unmarshal(&appConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return &appConfig, nil
 }

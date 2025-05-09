@@ -18,22 +18,21 @@ redis:
 postgres:
   port: 5733
   retries: 2
-  ssl_mode: true
   sslMode: true
+  readTimeout: 20
   user: "postgres"
+  writeTimeout: 30
   host: "localhost"
-  read_timeout: 20
-  write_timeout: 30
   password: "postgres"
   name: "xrf-q2-pg-bid"
 
 timescaledb:
   port: 5733
-  ssl_mode: true
+  sslMode: true
+  readTimeout: 20
   user: "postgres"
+  writeTimeout: 30
   host: "localhost"
-  read_timeout: 20s
-  write_timeout: 30s
   connectRetries: 2
-  name: xrf-q2-ts-bid
   password: "postgres"
+  databaseName: "xrf-q2-ts-bid"

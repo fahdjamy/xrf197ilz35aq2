@@ -84,9 +84,9 @@ func NewRedisClient(redisConfig internal.RedisConfig, ctx context.Context) (*red
 			PoolSize:     redisConfig.PoolSize,
 			MaxRetries:   redisConfig.MaxRetries,
 			MinIdleConns: redisConfig.MinIdleConns,
-			DialTimeout:  redisConfig.DialTimeout * time.Second,
-			ReadTimeout:  redisConfig.ReadTimeout * time.Second,
-			WriteTimeout: redisConfig.WriteTimeout * time.Second,
+			DialTimeout:  time.Duration(redisConfig.DialTimeout) * time.Second,
+			ReadTimeout:  time.Duration(redisConfig.ReadTimeout) * time.Second,
+			WriteTimeout: time.Duration(redisConfig.WriteTimeout) * time.Second,
 		})
 		_, err := client.Ping(ctx).Result()
 		if err != nil {
