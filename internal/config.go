@@ -193,7 +193,7 @@ func GetConfig(env string) (*Config, error) {
 	if found {
 		appConfig.TimescaleDB.DatabaseURL = tsDBURLFromEnv
 	} else {
-		tsDbURL, err := setTsDbURL(&appConfig.TimescaleDB)
+		tsDbURL, err := setTsDbURL(&appConfig.TimescaleDB, env)
 		if err != nil {
 			return nil, err
 		}
@@ -203,14 +203,17 @@ func GetConfig(env string) (*Config, error) {
 	return &appConfig, nil
 }
 
-func setTsDbURL(tsConfig *TimescaleDBConfig) (string, error) {
-	conn := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s&pool_max_conns=10",
+func setTsDbURL(tsConfig *TimescaleDBConfig, env string) (string, error) {
+	conn := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?pool_max_conns=10",
 		tsConfig.User,
 		tsConfig.Password,
 		tsConfig.Host,
 		tsConfig.Port,
 		tsConfig.DatabaseName,
-		tsConfig.SSLMode,
+		//tsConfig.SSLMode,
 	)
+	if strings.ToLower(env) == strings.ToLower(ProductionEnv) {
+		conn = fmt.Sprintf("%s&sslmode=%s", conn, tsConfig.SSLMode)
+	}
 	return conn, nil
 }

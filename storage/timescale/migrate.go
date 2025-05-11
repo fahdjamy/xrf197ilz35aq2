@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 	"xrf197ilz35aq2/internal"
 )
 
@@ -29,16 +29,17 @@ func MigrateTimescaleTables(ctx context.Context, pool *pgxpool.Pool) error {
 		if !info.IsDir() && filepath.Ext(path) == ".sql" {
 			sqlStmt, err := os.ReadFile(path)
 			if err != nil {
-				fmt.Printf("Error reading file %s: %v\n", path, err)
-				return err
+				return fmt.Errorf("failed to read migration sql :: err=%w", err)
 			}
-			_, err = pool.Exec(ctx, string(sqlStmt))
+			sqlToRun := strings.Replace(string(sqlStmt), "\n", "", -1)
+			_, err = pool.Exec(ctx, sqlToRun)
+
 			if err != nil {
-				slog.Warn("Error executing migration sql", "path", path, "err", err)
+				return fmt.Errorf("failed to execute migration sql :: err=%w", err)
 			}
 		}
 		return nil
 	})
 
-	return nil
+	return err
 }

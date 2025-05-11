@@ -16,7 +16,7 @@ redis:
   address: "127.0.0.1:6379"
 
 postgres:
-  port: 5733
+  port: 5432
   retries: 2
   readTimeout: 20
   user: "postgres"
@@ -27,7 +27,7 @@ postgres:
   name: "xrf-q2-pg-bid"
 
 timescaledb:
-  port: 5733
+  port: 5432
   readTimeout: 20
   user: "postgres"
   writeTimeout: 30

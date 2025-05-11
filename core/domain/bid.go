@@ -17,13 +17,15 @@ const (
 type Bid struct {
 	Id        int64     `json:"bidId" db:"id"`
 	Amount    float64   `json:"amount" db:"amount"`
+	Symbol    string    `json:"symbol" db:"symbol"`
+	Quantity  float64   `json:"quantity" db:"quantity"`
 	AssetId   string    `json:"assetId" db:"asset_id"`
 	Status    string    `json:"status" db:"bid_status"`
-	Accepted  bool      `json:"accepted" db:"accepted"`
-	UserFp    string    `json:"placedBy" db:"placed_by"`
-	PlacedAt  time.Time `json:"placedAt" db:"placed_at"`
-	LastUntil time.Time `json:"lastUntil" db:"last_until"`
+	UserFp    string    `json:"placedBy" db:"bidder_fp"`
+	PlacedAt  time.Time `json:"placedAt" db:"trade_time"`
+	Accepted  bool      `json:"accepted" db:"is_accepted"`
 	SessionId int64     `json:"sessionId" db:"session_id"`
+	LastUntil time.Time `json:"lastUntil" db:"expiration_time"`
 }
 
 func NewBid(userFp string, amount float64, assetId string, lastUntil time.Time, sessionId int64) (*Bid, error) {
