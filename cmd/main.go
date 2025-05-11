@@ -32,7 +32,7 @@ func main() {
 	}
 
 	// setup Databases
-	_, err = setTimescaleDB(config, logger)
+	_, err = setTimescaleDB(config, *logger)
 	if err != nil {
 		logger.Error("Failed to setup timescaleDB: %s\n", "err", err)
 		return
@@ -70,11 +70,11 @@ func getAppEnv() string {
 	}
 }
 
-func setTimescaleDB(config *internal.Config, logger *slog.Logger) (*storage.TimescaleDB, error) {
+func setTimescaleDB(config *internal.Config, logger slog.Logger) (*storage.TimescaleDB, error) {
 	ctx := context.Background()
-	timescaleDBUrl, err := config.TimescaleDB.GetDdURL()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load timescaleDBUrl :: err=%w", err)
+	timescaleDBUrl := config.TimescaleDB.DatabaseURL
+	if timescaleDBUrl == "" {
+		return nil, fmt.Errorf("failed to load timescaleDBUrl")
 	}
 
 	connTSDBCtx, cancelFunc := context.WithTimeout(ctx, 10*time.Second)

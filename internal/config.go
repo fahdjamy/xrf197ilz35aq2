@@ -12,8 +12,9 @@ import (
 )
 
 const (
-	maxRetries = 3
-	retryAfter = 2 * time.Second
+	maxRetries    = 3
+	retryAfter    = 2 * time.Second
+	tsDBEnvURLKey = "XRF_Q2_BID_TS_DB_URL"
 )
 
 type LogConfig struct {
@@ -25,15 +26,16 @@ type TimescaleDBConfig struct {
 	Host         string `yml:"host"`
 	User         string `yml:"user"`
 	Password     string `yml:"password"`
-	SSLMode      bool   `yml:"sslMode"`
+	SSLMode      string `yml:"sslMode"`
 	ReadTimeout  int    `yml:"readTimeout"`
 	DatabaseName string `yml:"databaseName"`
 	WriteTimeout int    `yml:"writeTimeout"`
 	Retries      int    `yml:"connectRetries"`
+	DatabaseURL  string
 }
 
 func (tsDB *TimescaleDBConfig) GetDdURL() (string, error) {
-	conn := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%t",
+	conn := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s",
 		tsDB.User,
 		tsDB.Password,
 		tsDB.Host,
@@ -48,7 +50,7 @@ type PostgresConfig struct {
 	Port         int    `yml:"port"`
 	Host         string `yml:"host"`
 	User         string `yml:"user"`
-	SslMode      bool   `yml:"sslMode"`
+	SslMode      string `yml:"sslMode"`
 	Name         string `yml:"db_name"`
 	Retries      int    `yml:"retries"`
 	Password     string `yml:"password"`
@@ -129,7 +131,7 @@ func createDBURL(pgConfig PostgresConfig) (string, error) {
 	if pgConfig.Name == "" {
 		return "", fmt.Errorf("dataname cannot be empty")
 	}
-	conn := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%t",
+	conn := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s",
 		pgConfig.User,
 		pgConfig.Password,
 		pgConfig.Host,
@@ -187,5 +189,28 @@ func GetConfig(env string) (*Config, error) {
 		return nil, err
 	}
 
+	tsDBURLFromEnv, found := os.LookupEnv(tsDBEnvURLKey)
+	if found {
+		appConfig.TimescaleDB.DatabaseURL = tsDBURLFromEnv
+	} else {
+		tsDbURL, err := setTsDbURL(&appConfig.TimescaleDB)
+		if err != nil {
+			return nil, err
+		}
+		appConfig.TimescaleDB.DatabaseURL = tsDbURL
+	}
+
 	return &appConfig, nil
+}
+
+func setTsDbURL(tsConfig *TimescaleDBConfig) (string, error) {
+	conn := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s&pool_max_conns=10",
+		tsConfig.User,
+		tsConfig.Password,
+		tsConfig.Host,
+		tsConfig.Port,
+		tsConfig.DatabaseName,
+		tsConfig.SSLMode,
+	)
+	return conn, nil
 }
