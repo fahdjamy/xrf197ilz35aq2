@@ -124,6 +124,12 @@ func GetTimescaleDBConn(ctx context.Context, dbUrl string, log slog.Logger, maxC
 			tsInitializationErr = fmt.Errorf("failed to connect to 'database': %w", err)
 			return
 		}
+		// Ensure the TimescaleDB extension is enabled
+		_, err = dbPool.Exec(ctx, "CREATE EXTENSION IF NOT EXISTS timescaledb;")
+		if err != nil {
+			tsInitializationErr = fmt.Errorf("failed to enable timescaledb extension: %w", err)
+			return
+		}
 	})
 
 	// Important: Check the global error variable *after* once.Do.

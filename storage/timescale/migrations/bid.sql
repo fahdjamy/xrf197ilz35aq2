@@ -11,3 +11,5 @@ CREATE TABLE IF NOT EXISTS bid_records (
     quantity DOUBLE PRECISION NOT NULL,
     expiration_time TIMESTAMPTZ NOT NULL
 );
+----
+SELECT create_hypertable('bid_records', 'trade_time', if_not_exists => TRUE);

@@ -90,7 +90,7 @@ func setTimescaleDB(config *internal.Config, logger slog.Logger) (*storage.Times
 
 	migrateCtx, cancelFunc := context.WithTimeout(ctx, 20000*time.Second)
 	defer cancelFunc()
-	err = timescale.MigrateTimescaleTables(migrateCtx, timescalePool.Pool)
+	err = timescale.MigrateTimescaleTables(migrateCtx, timescalePool.Pool, logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to migrate timescaleDB: tables :: err=%w", err)
 	}
