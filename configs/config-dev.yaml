@@ -10,9 +10,9 @@ redis:
   password: ""
   maxRetries: 1
   minIdleConns: 2
-  dial_timeout: 10s
-  read_timeout: 15s
-  write_timeout: 30s
+  dialTimeout: 10
+  readTimeout: 15
+  writeTimeout: 30
   address: "127.0.0.1:6379"
 
 postgres:
@@ -21,6 +21,7 @@ postgres:
   readTimeout: 20
   user: "postgres"
   writeTimeout: 30
+  maxPoolConns: 10
   host: "localhost"
   sslMode: "verify-ca"
   password: "postgres"
@@ -31,6 +32,7 @@ timescaledb:
   readTimeout: 20
   user: "postgres"
   writeTimeout: 30
+  maxPoolConns: 10
   host: "localhost"
   connectRetries: 2
   sslMode: "verify-ca"

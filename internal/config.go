@@ -15,6 +15,7 @@ const (
 	maxRetries    = 3
 	retryAfter    = 2 * time.Second
 	tsDBEnvURLKey = "XRF_Q2_BID_TS_DB_URL"
+	pgDBEnvURLKey = "XRF_Q2_BID_PG_DB_URL"
 )
 
 type LogConfig struct {
@@ -27,6 +28,7 @@ type TimescaleDBConfig struct {
 	User         string `yml:"user"`
 	Password     string `yml:"password"`
 	SSLMode      string `yml:"sslMode"`
+	MaxPoolConns int    `yml:"maxPoolConns"`
 	ReadTimeout  int    `yml:"readTimeout"`
 	DatabaseName string `yml:"databaseName"`
 	WriteTimeout int    `yml:"writeTimeout"`
@@ -34,28 +36,17 @@ type TimescaleDBConfig struct {
 	DatabaseURL  string
 }
 
-func (tsDB *TimescaleDBConfig) GetDdURL() (string, error) {
-	conn := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s",
-		tsDB.User,
-		tsDB.Password,
-		tsDB.Host,
-		tsDB.Port,
-		tsDB.DatabaseName,
-		tsDB.SSLMode,
-	)
-	return conn, nil
-}
-
 type PostgresConfig struct {
 	Port         int    `yml:"port"`
 	Host         string `yml:"host"`
 	User         string `yml:"user"`
+	Name         string `yml:"name"`
 	SslMode      string `yml:"sslMode"`
-	Name         string `yml:"db_name"`
 	Retries      int    `yml:"retries"`
 	Password     string `yml:"password"`
 	ReadTimeout  int    `yml:"readTimeout"`
 	WriteTimeout int    `yml:"writeTimeout"`
+	MaxPoolConns int    `yml:"maxPoolConns"`
 	DatabaseURL  string
 }
 
@@ -85,39 +76,53 @@ var (
 	configErr  error
 )
 
-func NewConfig(env string) (*Config, error) {
+func loadConfigs(env string) (*Config, error) {
 	configOnce.Do(func() {
-		yamlFile, err := OpenFromRoot(fmt.Sprintf("configs/config-%s.yml", env))
+		configFilePath := fmt.Sprintf("config-%s.yaml", env)
+		viper.SetConfigName(configFilePath)
+		viper.AddConfigPath("./configs")
+		viper.SetConfigType("yaml")
+
+		// AutomaticEnv check for an environment variable any time a viper.Get request is made.
+
+		// Rules: viper checks for an environment variable w/ a name matching the key uppercased and prefixed with the EnvPrefix if set.
+		viper.AutomaticEnv()
+		viper.SetEnvPrefix("XRF_Q2") // will be uppercased automatically
+		// this is useful e.g., want to use . in Get() calls, but environmental variables are to use _ delimiters (e.g., app.port -> APP_PORT)
+		viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+
+		// Read the config file
+		err := viper.ReadInConfig()
 		if err != nil {
-			configErr = fmt.Errorf("failed to open config file: %w :: env=%s", err, env)
+			configErr = fmt.Errorf("failed to read config file: %w :: env=%s", err, env)
 			return
 		}
 
-		config, err = readConfiguration(yamlFile)
+		appConfig := Config{}
+		err = viper.Unmarshal(&appConfig)
 		if err != nil {
-			configErr = fmt.Errorf("error reading config file: %w :: env=%s", err, env)
+			configErr = fmt.Errorf("failed to unmarshal config file: %w :: env=%s", err, env)
 			return
 		}
-		dbURL, dbURLExists := os.LookupEnv("XRF_Q2_BID_PG_DB_URL")
+
+		tsDBURLFromEnv, found := os.LookupEnv(tsDBEnvURLKey)
+		if found {
+			appConfig.TimescaleDB.DatabaseURL = tsDBURLFromEnv
+		} else {
+			tsDbURL, err := setTsDbURL(&appConfig.TimescaleDB, env)
+			if err != nil {
+				configErr = fmt.Errorf("failed to set tsDbURL: %w :: env=%s", err, env)
+				return
+			}
+			appConfig.TimescaleDB.DatabaseURL = tsDbURL
+		}
+
+		dbURL, dbURLExists := os.LookupEnv(pgDBEnvURLKey)
 		if dbURLExists {
 			config.Postgres.DatabaseURL = dbURL
-			return
 		}
-		dbURL, err = createDBURL(config.Postgres)
-		if err != nil {
-			configErr = fmt.Errorf("failed to create postgres database URL: %w :: env=%s", err, env)
-			return
-		}
-		config.Postgres.DatabaseURL = dbURL
 
-		// IF redis environment variables are set, use environment variables
-		redisPortInEnv, portExists := os.LookupEnv("XRF_Q2_REDIS_PORT")
-		redisPasswordInEnv, redisPassExists := os.LookupEnv("XRF_Q2_REDIS_PASSWORD")
-		redisAddressInEnv, redisAddressExists := os.LookupEnv("XRF_Q2_ADDRESS_PASSWORD")
-		if redisAddressExists && portExists && redisPassExists {
-			config.Redis.Password = redisPasswordInEnv
-			config.Redis.Address = redisAddressInEnv + ":" + redisPortInEnv
-		}
+		config = &appConfig
 	})
 
 	// Important: Check the global error variable *after* once.Do.
@@ -125,21 +130,6 @@ func NewConfig(env string) (*Config, error) {
 		return nil, configErr // Return the stored error
 	}
 	return config, nil
-}
-
-func createDBURL(pgConfig PostgresConfig) (string, error) {
-	if pgConfig.Name == "" {
-		return "", fmt.Errorf("dataname cannot be empty")
-	}
-	conn := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s",
-		pgConfig.User,
-		pgConfig.Password,
-		pgConfig.Host,
-		pgConfig.Port,
-		pgConfig.Name,
-		pgConfig.SslMode,
-	)
-	return conn, nil
 }
 
 func readConfiguration(file io.ReadCloser) (*Config, error) {
@@ -162,55 +152,17 @@ func readConfiguration(file io.ReadCloser) (*Config, error) {
 }
 
 func GetConfig(env string) (*Config, error) {
-	// Set up viper to read the config.yaml file
-	configFilePath := fmt.Sprintf("config-%s.yaml", env)
-	viper.SetConfigName(configFilePath)
-	viper.AddConfigPath("./configs")
-	viper.SetConfigType("yaml")
-
-	// AutomaticEnv check for an environment variable any time a viper.Get request is made.
-
-	// Rules: viper checks for an environment variable w/ a name matching the key uppercased and prefixed with the EnvPrefix if set.
-	viper.AutomaticEnv()
-	viper.SetEnvPrefix("XRF_Q2") // will be uppercased automatically
-	// this is useful e.g., want to use . in Get() calls, but environmental variables are to use _ delimiters (e.g., app.port -> APP_PORT)
-	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-
-	// Read the config file
-	err := viper.ReadInConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	appConfig := Config{}
-
-	err = viper.Unmarshal(&appConfig)
-	if err != nil {
-		return nil, err
-	}
-
-	tsDBURLFromEnv, found := os.LookupEnv(tsDBEnvURLKey)
-	if found {
-		appConfig.TimescaleDB.DatabaseURL = tsDBURLFromEnv
-	} else {
-		tsDbURL, err := setTsDbURL(&appConfig.TimescaleDB, env)
-		if err != nil {
-			return nil, err
-		}
-		appConfig.TimescaleDB.DatabaseURL = tsDbURL
-	}
-
-	return &appConfig, nil
+	return loadConfigs(env)
 }
 
 func setTsDbURL(tsConfig *TimescaleDBConfig, env string) (string, error) {
-	conn := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?pool_max_conns=10",
+	conn := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?pool_max_conns=%d",
 		tsConfig.User,
 		tsConfig.Password,
 		tsConfig.Host,
 		tsConfig.Port,
 		tsConfig.DatabaseName,
-		//tsConfig.SSLMode,
+		tsConfig.MaxPoolConns,
 	)
 	if strings.ToLower(env) == strings.ToLower(ProductionEnv) {
 		conn = fmt.Sprintf("%s&sslmode=%s", conn, tsConfig.SSLMode)
