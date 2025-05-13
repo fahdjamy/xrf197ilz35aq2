@@ -10,7 +10,7 @@ import (
 )
 
 type BidRepository interface {
-	CreateBid(ctx context.Context, request domain.Bid) (int64, error)
+	CreateBid(ctx context.Context, request domain.Bid) (string, error)
 	BatchCreateBids(ctx context.Context, bids []domain.Bid) (int64, error)
 	CreateBidsCopyFrom(ctx context.Context, bids []domain.Bid) (int64, error)
 }
@@ -20,12 +20,12 @@ type bidRepository struct {
 	dbPool *pgx.Conn
 }
 
-func (repo *bidRepository) CreateBid(ctx context.Context, newBid domain.Bid) (int64, error) {
+func (repo *bidRepository) CreateBid(ctx context.Context, newBid domain.Bid) (string, error) {
 	sql := `
 INSERT INTO bid (id, amount, asset_id, bid_status, accepted, placed_by, placed_at, last_until, session_id)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 RETURNING id`
-	var id int64
+	var id string
 	err := repo.dbPool.QueryRow(ctx, sql,
 		newBid.Amount,
 		newBid.AssetId,
@@ -37,7 +37,7 @@ RETURNING id`
 		newBid.SessionId,
 	).Scan(&id)
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 
 	newBid.Id = id
@@ -50,7 +50,12 @@ func (repo *bidRepository) BatchCreateBids(ctx context.Context, bids []domain.Bi
 	if err != nil {
 		return 0, fmt.Errorf("error starting transaction for batch create bids: %w", err)
 	}
-	defer tx.Rollback(ctx) //Rollback on error
+	defer func(tx pgx.Tx, ctx context.Context) {
+		err := tx.Rollback(ctx)
+		if err != nil {
+			repo.log.Error(fmt.Sprintf("error rolling back transaction for batch create bids: %w", err))
+		}
+	}(tx, ctx) //Rollback on error
 
 	batch := &pgx.Batch{}
 	for _, bid := range bids {

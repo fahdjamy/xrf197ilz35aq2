@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"fmt"
 	"math/big"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -15,7 +16,7 @@ const (
 )
 
 type Bid struct {
-	Id        int64     `json:"bidId" db:"id"`
+	Id        string    `json:"bidId" db:"id"`
 	Amount    float64   `json:"amount" db:"amount"`
 	Symbol    string    `json:"symbol" db:"symbol"`
 	Quantity  float64   `json:"quantity" db:"quantity"`
@@ -42,7 +43,7 @@ func NewBid(userFp string, amount float64, assetId string, lastUntil time.Time, 
 		SessionId: sessionId,
 		LastUntil: lastUntil,
 		Status:    PendingBid,
-		Id:        generateId(), // an ID is generated because a bid is first cached before it's saved to the DB
+		Id:        strconv.FormatInt(generateId(), 10), // an ID is generated because a bid is first cached before it's saved to the DB
 	}, nil
 }
 
@@ -78,7 +79,7 @@ func generateId() int64 {
 	mutex.Lock()
 	defer mutex.Unlock()
 
-	// Get current timestamp in nanoseconds
+	// Get the current timestamp in nanoseconds
 	now := time.Now().UnixNano()
 
 	// Ensure uniqueness even if called multiple times in the same nanosecond
@@ -88,7 +89,7 @@ func generateId() int64 {
 	lastValue = now
 
 	// Generate a random int64 to add further uniqueness
-	// The maximum value for rand.Int is adjusted to 1<<62 - 1 to ensure the random part is always positive.
+	// The maximum value for rand.Int is adjusted to 1<<62-1 to ensure the random part is always positive.
 	randomPart, _ := rand.Int(rand.Reader, big.NewInt(1<<31-1)) // Max positive int64
 
 	// Clear the most significant 32 bits of the timestamp to ensure it's positive after the shift
