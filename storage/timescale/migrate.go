@@ -11,7 +11,9 @@ import (
 	"xrf197ilz35aq2/internal"
 )
 
-const tsStatementsSep = "----"
+const (
+	tsStatementsSep = "----"
+)
 
 func MigrateTimescaleTables(ctx context.Context, pool *pgxpool.Pool, logger slog.Logger) error {
 	migrationsRelativePath := "storage/timescale/migrations"

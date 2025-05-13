@@ -3,8 +3,6 @@ package internal
 import (
 	"fmt"
 	"github.com/spf13/viper"
-	"gopkg.in/yaml.v3"
-	"io"
 	"os"
 	"strings"
 	"sync"
@@ -129,25 +127,6 @@ func loadConfigs(env string) (*Config, error) {
 		return nil, configErr // Return the stored error
 	}
 	return config, nil
-}
-
-func readConfiguration(file io.ReadCloser) (*Config, error) {
-	defer func() {
-		if err := CloseFileWithRetry(file, maxRetries, retryAfter); err != nil {
-			fmt.Println(err)
-		}
-	}()
-
-	// Decode the YAML into a struct
-	var config Config
-
-	// NewDecoder returns a new decoder that reads from r (a file)
-	decoder := yaml.NewDecoder(file)
-	err := decoder.Decode(&config)
-	if err != nil {
-		return nil, err
-	}
-	return &config, nil
 }
 
 func GetConfig(env string) (*Config, error) {
