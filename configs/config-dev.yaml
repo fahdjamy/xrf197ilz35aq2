@@ -25,7 +25,7 @@ postgres:
   host: "localhost"
   sslMode: "verify-ca"
   password: "postgres"
-  name: "xrf-q2-pg-bid"
+  databaseName: "xrf-q2-pg-bid"
 
 timescaledb:
   port: 5432

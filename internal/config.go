@@ -22,30 +22,16 @@ type LogConfig struct {
 	OutputFile string `yaml:"outputFile"`
 }
 
-type TimescaleDBConfig struct {
-	Port         int    `yml:"port"`
-	Host         string `yml:"host"`
-	User         string `yml:"user"`
-	Password     string `yml:"password"`
-	SSLMode      string `yml:"sslMode"`
-	MaxPoolConns int    `yml:"maxPoolConns"`
-	ReadTimeout  int    `yml:"readTimeout"`
-	DatabaseName string `yml:"databaseName"`
-	WriteTimeout int    `yml:"writeTimeout"`
-	Retries      int    `yml:"connectRetries"`
-	DatabaseURL  string
-}
-
 type PostgresConfig struct {
 	Port         int    `yml:"port"`
 	Host         string `yml:"host"`
 	User         string `yml:"user"`
-	Name         string `yml:"name"`
-	SslMode      string `yml:"sslMode"`
+	SSLMode      string `yml:"sslMode"`
 	Retries      int    `yml:"retries"`
 	Password     string `yml:"password"`
 	ReadTimeout  int    `yml:"readTimeout"`
 	WriteTimeout int    `yml:"writeTimeout"`
+	DatabaseName string `yml:"databaseName"`
 	MaxPoolConns int    `yml:"maxPoolConns"`
 	DatabaseURL  string
 }
@@ -64,10 +50,10 @@ type RedisConfig struct {
 }
 
 type Config struct {
-	Log         LogConfig         `yml:"log"`
-	Redis       RedisConfig       `yml:"redis"`
-	Postgres    PostgresConfig    `yml:"postgres"`
-	TimescaleDB TimescaleDBConfig `yml:"timescaledb"`
+	Log         LogConfig      `yml:"log"`
+	Redis       RedisConfig    `yml:"redis"`
+	Postgres    PostgresConfig `yml:"postgres"`
+	TimescaleDB PostgresConfig `yml:"timescaledb"`
 }
 
 var (
@@ -116,10 +102,23 @@ func loadConfigs(env string) (*Config, error) {
 			}
 			appConfig.TimescaleDB.DatabaseURL = tsDbURL
 		}
+		if !validateDBName(appConfig.TimescaleDB.DatabaseName, "ts") {
+			configErr = fmt.Errorf("invalid timescaleDB database name")
+		}
 
 		dbURL, dbURLExists := os.LookupEnv(pgDBEnvURLKey)
 		if dbURLExists {
 			config.Postgres.DatabaseURL = dbURL
+		} else {
+			pgDbURL, err := setTsDbURL(&appConfig.Postgres, env)
+			if err != nil {
+				configErr = fmt.Errorf("failed to set pgDbURL: %w :: env=%s", err, env)
+				return
+			}
+			appConfig.Postgres.DatabaseURL = pgDbURL
+		}
+		if !validateDBName(appConfig.Postgres.DatabaseName, "pg") {
+			configErr = fmt.Errorf("invalid postgres database name")
 		}
 
 		config = &appConfig
@@ -155,7 +154,7 @@ func GetConfig(env string) (*Config, error) {
 	return loadConfigs(env)
 }
 
-func setTsDbURL(tsConfig *TimescaleDBConfig, env string) (string, error) {
+func setTsDbURL(tsConfig *PostgresConfig, env string) (string, error) {
 	conn := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?pool_max_conns=%d",
 		tsConfig.User,
 		tsConfig.Password,
@@ -168,4 +167,8 @@ func setTsDbURL(tsConfig *TimescaleDBConfig, env string) (string, error) {
 		conn = fmt.Sprintf("%s&sslmode=%s", conn, tsConfig.SSLMode)
 	}
 	return conn, nil
+}
+
+func validateDBName(name string, expectedSubStr string) bool {
+	return name != "" && strings.Contains(name, expectedSubStr)
 }
