@@ -36,7 +36,7 @@ func (worker *BidWorker) ProcessCachedBidsFromQueue(ctx context.Context, queue s
 			continue
 		}
 
-		// 2. Process cached string bids and un-marshal them into Bid struct
+		// 2. Process cached string bids and unmarshal them into Bid struct
 		bids := make([]domain.Bid, 0)
 		for _, cachedBid := range result {
 			var bid domain.Bid
@@ -47,7 +47,7 @@ func (worker *BidWorker) ProcessCachedBidsFromQueue(ctx context.Context, queue s
 			bids = append(bids, bid)
 		}
 
-		// only start saving bids if at least more than one bid is un-marshalled.
+		// only start saving bids if at least more than one bid is unmarshalled.
 		if len(bids) == 0 {
 			time.Sleep(worker.sleep)
 			continue
