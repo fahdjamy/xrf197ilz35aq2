@@ -9,14 +9,21 @@ import (
 	"time"
 	"xrf197ilz35aq2/core/domain"
 	"xrf197ilz35aq2/storage/postgres"
+	"xrf197ilz35aq2/storage/timescale/queries"
 )
 
-type BidWorker struct {
-	log     slog.Logger
-	client  *redis.Client
+type JobsConfig struct {
 	timeout time.Duration
 	sleep   time.Duration
-	bidRepo postgres.BidRepository
+}
+
+type BidWorker struct {
+	log       slog.Logger
+	client    *redis.Client
+	timeout   time.Duration
+	sleep     time.Duration
+	bidRepo   postgres.BidRepository
+	tsQuerier queries.BidTSQuerier
 }
 
 // ProcessCachedBidsFromQueue --- Background Worker (separate process or goroutine)
@@ -73,12 +80,13 @@ func (worker *BidWorker) ProcessCachedBidsFromQueue(ctx context.Context, queue s
 	}
 }
 
-func NewBidWorker(log slog.Logger, client *redis.Client, timeout time.Duration, workerSleep time.Duration, bidRepo postgres.BidRepository) *BidWorker {
+func NewBidWorker(log slog.Logger, client *redis.Client, config JobsConfig, bidRepo postgres.BidRepository, tsQuerier queries.BidTSQuerier) *BidWorker {
 	return &BidWorker{
-		log:     log,
-		client:  client,
-		bidRepo: bidRepo,
-		timeout: timeout,
-		sleep:   workerSleep,
+		log:       log,
+		client:    client,
+		bidRepo:   bidRepo,
+		tsQuerier: tsQuerier,
+		sleep:     config.sleep,
+		timeout:   config.timeout,
 	}
 }

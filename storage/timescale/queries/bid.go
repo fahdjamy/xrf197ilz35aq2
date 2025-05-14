@@ -8,10 +8,10 @@ import (
 )
 
 type BidTSQuerier interface {
+	BatchSave(ctx context.Context, bids []domain.Bid) (int64, error)
+	GetBidById(ctx context.Context, bidId string) (domain.Bid, error)
+	BatchSaveBid(ctx context.Context, bids []domain.Bid) (int64, error)
 	SaveBid(ctx context.Context, sellerFp string, bid domain.Bid) (bool, error)
-	BatchSave(bids []domain.Bid) (int64, error)
-	GetBidById(bidId string) (domain.Bid, error)
-	BatchSaveBid(bids []domain.Bid) (int64, error)
 }
 
 type bidTSQuerier struct {
@@ -22,12 +22,12 @@ type bidTSQuerier struct {
 func (querier *bidTSQuerier) SaveBid(ctx context.Context, sellerFp string, bid domain.Bid) (bool, error) {
 	insertSQL := `
 INSERT INTO bid_records
-    (id, symbol, is_accepted, asset_id, bidder_fp, seller_fp, trade_time, session_id, amount, quantity, expiration_time)
+    (id, symbol, is_accepted, asset_id, bidder_fp, seller_fp, bid_time, session_id, amount, quantity, expiration_time)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);
 `
 	result, err := querier.db.Exec(ctx, insertSQL, bid.Id,
 		bid.Symbol, bid.AssetId, bid.UserFp, sellerFp,
-		bid.PlacedAt, bid.SessionId, bid.Amount,
+		bid.Timestamp, bid.SessionId, bid.Amount,
 		bid.Quantity, bid.LastUntil)
 	if err != nil {
 		return false, err
@@ -37,17 +37,17 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);
 	return true, nil
 }
 
-func (querier *bidTSQuerier) BatchSave(bids []domain.Bid) (int64, error) {
+func (querier *bidTSQuerier) BatchSave(ctx context.Context, bids []domain.Bid) (int64, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (querier *bidTSQuerier) GetBidById(bidId string) (domain.Bid, error) {
+func (querier *bidTSQuerier) GetBidById(ctx context.Context, bidId string) (domain.Bid, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (querier *bidTSQuerier) BatchSaveBid(bids []domain.Bid) (int64, error) {
+func (querier *bidTSQuerier) BatchSaveBid(ctx context.Context, bids []domain.Bid) (int64, error) {
 	//TODO implement me
 	panic("implement me")
 }
