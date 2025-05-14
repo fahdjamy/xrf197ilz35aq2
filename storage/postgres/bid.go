@@ -32,7 +32,7 @@ RETURNING id`
 		newBid.Status,
 		newBid.Accepted,
 		newBid.UserFp,
-		newBid.PlacedAt,
+		newBid.Timestamp,
 		newBid.LastUntil,
 		newBid.SessionId,
 	).Scan(&id)
@@ -68,7 +68,7 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
 			bid.Status,
 			bid.Accepted,
 			bid.UserFp,
-			bid.PlacedAt,
+			bid.Timestamp,
 			bid.LastUntil,
 			bid.SessionId)
 	}
@@ -104,7 +104,7 @@ func (repo *bidRepository) CreateBidsCopyFrom(ctx context.Context, bids []domain
 			bid.UserFp,
 			bid.SessionId,
 			bid.LastUntil,
-			bid.PlacedAt,
+			bid.Timestamp,
 		}, nil
 	})
 	columnNames := dao.GetBidColumnName()

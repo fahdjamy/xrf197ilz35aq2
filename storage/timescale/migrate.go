@@ -36,11 +36,7 @@ func MigrateTimescaleTables(ctx context.Context, pool *pgxpool.Pool, logger slog
 			if err != nil {
 				return fmt.Errorf("failed to read migration sql :: err=%w", err)
 			}
-			sqlStmtInFile := strings.Replace(string(sqlStmt), "\n", "", -1)
-			statements := strings.Split(sqlStmtInFile, tsStatementsSep)
-			if len(statements) != 2 {
-				return fmt.Errorf("invalid migration scripts found in %s", path)
-			}
+			statements, err := getSQLStatements(string(sqlStmt))
 			createTableStmt := statements[0]
 			_, err = pool.Exec(ctx, createTableStmt)
 			if err != nil {
@@ -53,12 +49,36 @@ func MigrateTimescaleTables(ctx context.Context, pool *pgxpool.Pool, logger slog
 				return fmt.Errorf("failed create hypertable :: err=%w", err)
 			}
 			tableName := getTableName(createHypertableSQL)
+			if len(statements) > 2 {
+				runRemainingSqlStatements(ctx, statements[2:], pool, logger)
+			}
 			logger.Info("created table and hypertable", "tableName", tableName)
 		}
 		return nil
 	})
 
 	return err
+}
+
+func getSQLStatements(fileSqlStmt string) ([]string, error) {
+	sqlStmtInFile := strings.Replace(fileSqlStmt, "\n", "", -1)
+	statements := strings.Split(sqlStmtInFile, tsStatementsSep)
+	if len(statements) < 2 {
+		return nil, fmt.Errorf("invalid migration scripts found in %s", fileSqlStmt)
+	}
+	return statements, nil
+}
+
+func runRemainingSqlStatements(ctx context.Context, sqlStmt []string, pool *pgxpool.Pool, logger slog.Logger) {
+	if len(sqlStmt) >= 1 {
+		for _, statement := range sqlStmt {
+			_, err := pool.Exec(ctx, statement)
+			if err != nil {
+				logger.Error("failed to execute remaining sql statements", "err", err)
+			}
+			logger.Debug("executed remaining sql statements in file", "statement", statement)
+		}
+	}
 }
 
 func getTableName(createHypertableSQL string) string {

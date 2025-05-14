@@ -22,8 +22,8 @@ type Bid struct {
 	Quantity  float64   `json:"quantity" db:"quantity"`
 	AssetId   string    `json:"assetId" db:"asset_id"`
 	Status    string    `json:"status" db:"bid_status"`
+	Timestamp time.Time `json:"timestamp" db:"bid_time"`
 	UserFp    string    `json:"placedBy" db:"bidder_fp"`
-	PlacedAt  time.Time `json:"placedAt" db:"trade_time"`
 	Accepted  bool      `json:"accepted" db:"is_accepted"`
 	SessionId int64     `json:"sessionId" db:"session_id"`
 	LastUntil time.Time `json:"lastUntil" db:"expiration_time"`
@@ -35,7 +35,7 @@ func NewBid(userFp string, amount float64, assetId string, lastUntil time.Time, 
 		return nil, fmt.Errorf("lasting time %s is not a valid lasting time", lastUntil)
 	}
 	return &Bid{
-		PlacedAt:  now,
+		Timestamp: now,
 		Amount:    amount,
 		Accepted:  false,
 		UserFp:    userFp,
