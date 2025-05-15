@@ -16,17 +16,18 @@ const (
 )
 
 type Bid struct {
-	Id        string    `json:"bidId" db:"id"`
-	Amount    float64   `json:"amount" db:"amount"`
-	Symbol    string    `json:"symbol" db:"symbol"`
-	Quantity  float64   `json:"quantity" db:"quantity"`
-	AssetId   string    `json:"assetId" db:"asset_id"`
-	Status    string    `json:"status" db:"bid_status"`
-	Timestamp time.Time `json:"timestamp" db:"bid_time"`
-	UserFp    string    `json:"placedBy" db:"bidder_fp"`
-	Accepted  bool      `json:"accepted" db:"is_accepted"`
-	SessionId int64     `json:"sessionId" db:"session_id"`
-	LastUntil time.Time `json:"lastUntil" db:"expiration_time"`
+	Id         string    `json:"bidId" db:"id"`
+	AssetOwner string    `json:"_" db:"seller_fp"`
+	Amount     float64   `json:"amount" db:"amount"`
+	Symbol     string    `json:"symbol" db:"symbol"`
+	Quantity   float64   `json:"quantity" db:"quantity"`
+	AssetId    string    `json:"assetId" db:"asset_id"`
+	Status     string    `json:"status" db:"bid_status"`
+	Timestamp  time.Time `json:"timestamp" db:"bid_time"`
+	UserFp     string    `json:"placedBy" db:"bidder_fp"`
+	Accepted   bool      `json:"accepted" db:"is_accepted"`
+	SessionId  int64     `json:"sessionId" db:"session_id"`
+	LastUntil  time.Time `json:"lastUntil" db:"expiration_time"`
 }
 
 func NewBid(userFp string, amount float64, assetId string, lastUntil time.Time, sessionId int64) (*Bid, error) {
