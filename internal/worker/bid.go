@@ -22,8 +22,8 @@ type BidWorker struct {
 	client    *redis.Client
 	timeout   time.Duration
 	sleep     time.Duration
-	bidRepo   postgres.BidRepository
 	tsQuerier queries.BidTSQuerier
+	bidRepo   postgres.BidRepository
 }
 
 // ProcessCachedBidsFromQueue --- Background Worker (separate process or goroutine)
@@ -70,13 +70,30 @@ func (worker *BidWorker) ProcessCachedBidsFromQueue(ctx context.Context, queue s
 		}
 
 		// 4. Log successfully stored bids
-		if count != int64(len(bids)) {
-			worker.log.Warn("Error creating bids: savedBidsCount=%d of bids cachedCount=%d", "count", len(bids))
-		} else {
-			worker.log.Info(fmt.Sprintf("Successfully saved %d bids all from cache", count))
+		worker.logSavedBids("postgres", err, count, int64(len(bids)))
+
+		// 4. Save bids to the timescale db as well
+		tsRespCnt, err := worker.tsQuerier.BatchSaveBid(ctx, bids)
+		if err != nil {
+			worker.log.Error("Error saving bids to timescale", "err", err)
+			time.Sleep(worker.sleep)
+			continue
 		}
+
+		// 5. Log successfully stored bids
+		worker.logSavedBids("timescale", err, tsRespCnt, int64(len(bids)))
 		time.Sleep(worker.sleep)
 		continue
+	}
+}
+
+func (worker *BidWorker) logSavedBids(dbTye string, err error, count int64, expectedCnt int64, args ...interface{}) {
+	if err != nil {
+		worker.log.Error(fmt.Sprintf("Error saving bids to %s", dbTye), "err", err)
+	} else if count != expectedCnt {
+		worker.log.Warn(fmt.Sprintf("Error saving bids to %s: savedBidsCount=%d of bids cachedCount=%d", dbTye, count, expectedCnt), args...)
+	} else {
+		worker.log.Info(fmt.Sprintf(fmt.Sprintf("Successfully saved %d bids to %s", count, dbTye), args...))
 	}
 }
 
