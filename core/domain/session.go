@@ -1,13 +1,17 @@
 package domain
 
-import "time"
+import (
+	"fmt"
+	"strconv"
+	"time"
+)
 
 // Session captures the session for which bids can be placed on an asset. Think of it as an auction span.
 // e.g a trading day or session could be considered a bidding session.
 // Bids and asks (offers) are placed and matched within a trading session.
 // this table provides a grouping for bids that belong to a specific bidding event for an asset.
 type Session struct {
-	Id                int64     `json:"sessionId"  db:"id"`
+	Id                string    `json:"sessionId"  db:"id"`
 	UserFp            string    `json:"userFp"  db:"user_fp"`
 	Name              string    `json:"name" db:"session_name"`
 	AssetId           string    `json:"assetId"  db:"asset_id"`
@@ -15,7 +19,7 @@ type Session struct {
 	EndTime           time.Time `json:"endTime"   db:"end_time"`
 	StartTime         time.Time `json:"startTime"   db:"start_time"`
 	Status            string    `json:"status" db:"session_status"` // ["Scheduled," "Active," "Closed," "Completed," "Cancelled."]
-	CurrentHighestBid string    `json:"currentHighestBid"  db:"current_highest_bid"`
+	CurrentHighestBid float64   `json:"currentHighestBid"  db:"current_highest_bid"`
 	// defines the format/rules of the auction. Different auction types have different bidding mechanisms & strategies.
 	ActionType string `json:"auctionType"  db:"auction_type"`
 	// Allows asset owners to set a minimum value they are willing to accept
@@ -39,6 +43,40 @@ func IsValidAuctionType(auctionType string) bool {
 	return false
 }
 
-func NewSession() *Session {
-	return &Session{}
+func NewSession(incrementAmt float64, reservePx float64, autoExecute bool, sessionType string, assetId string, userFp string, name string) (*Session, error) {
+	if err := validateSessionType(sessionType); err != nil {
+		return nil, err
+	}
+	sessionId := generateId()
+	now := time.Now()
+	return &Session{
+		Id:                 strconv.FormatInt(sessionId, 10),
+		Status:             "Scheduled",
+		CurrentHighestBid:  0.0,
+		BidIncrementAmount: incrementAmt,
+		ReservePrice:       reservePx,
+		AutoExecute:        autoExecute,
+		EndTime:            now,
+		StartTime:          now,
+		CreatedAt:          now,
+		AssetId:            assetId,
+		ActionType:         sessionType,
+		Name:               name,
+		UserFp:             userFp,
+	}, nil
+}
+
+func validateSessionType(auctionType string) error {
+	if auctionType == "" {
+		return fmt.Errorf("auctionType cannot be empty")
+	}
+
+	allowedAuctionTypes := make([]string, 0)
+	allowedAuctionTypes = append(allowedAuctionTypes, EnglishAuction, DutchAuction, SealedAuction, FirstPriceSealedAuction, FixedPriceAuction)
+	for _, allowedAuctionType := range allowedAuctionTypes {
+		if allowedAuctionType == auctionType {
+			return nil
+		}
+	}
+	return fmt.Errorf("auctionType %s is not supported", auctionType)
 }
