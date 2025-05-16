@@ -44,8 +44,8 @@ func IsValidAuctionType(auctionType string) bool {
 }
 
 func NewSession(incrementAmt float64, reservePx float64, autoExecute bool, sessionType string, assetId string, userFp string, name string) (*Session, error) {
-	if err := validateSessionType(sessionType); err != nil {
-		return nil, err
+	if valid := IsValidAuctionType(sessionType); !valid {
+		return nil, fmt.Errorf("invalid auction type %s", sessionType)
 	}
 	sessionId := generateId()
 	now := time.Now()
@@ -64,19 +64,4 @@ func NewSession(incrementAmt float64, reservePx float64, autoExecute bool, sessi
 		Name:               name,
 		UserFp:             userFp,
 	}, nil
-}
-
-func validateSessionType(auctionType string) error {
-	if auctionType == "" {
-		return fmt.Errorf("auctionType cannot be empty")
-	}
-
-	allowedAuctionTypes := make([]string, 0)
-	allowedAuctionTypes = append(allowedAuctionTypes, EnglishAuction, DutchAuction, SealedAuction, FirstPriceSealedAuction, FixedPriceAuction)
-	for _, allowedAuctionType := range allowedAuctionTypes {
-		if allowedAuctionType == auctionType {
-			return nil
-		}
-	}
-	return fmt.Errorf("auctionType %s is not supported", auctionType)
 }
