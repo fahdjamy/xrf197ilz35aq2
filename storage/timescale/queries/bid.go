@@ -8,16 +8,25 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"log/slog"
+	"time"
 	"xrf197ilz35aq2/core/domain"
 )
 
 const bidRecordTableName = "bid_records"
 
+type BidScanError struct {
+	Err       error
+	SkipCount int64
+}
+
+func (b *BidScanError) Error() string {
+	return fmt.Sprintf("error scanning bid record :: err=%s, skipCount=%d", b.Err, b.SkipCount)
+}
+
 type BidTSQuerier interface {
 	SaveBid(ctx context.Context, bid domain.Bid) (bool, error)
 	BatchSave(ctx context.Context, bids []domain.Bid) (int64, error)
-	GetBidById(ctx context.Context, bidId string) (domain.Bid, error)
-	BatchSaveBid(ctx context.Context, bids []domain.Bid) (int64, error)
+	FindBidsInTimeRange(ctx context.Context, startTime time.Time, endTime time.Time) ([]domain.Bid, error)
 }
 
 type bidTSQuerier struct {
@@ -103,14 +112,52 @@ func (querier *bidTSQuerier) BatchSave(ctx context.Context, bids []domain.Bid) (
 	return count, nil
 }
 
-func (querier *bidTSQuerier) GetBidById(ctx context.Context, bidId string) (domain.Bid, error) {
-	//TODO implement me
-	panic("implement me")
-}
+func (querier *bidTSQuerier) FindBidsInTimeRange(ctx context.Context, startTime time.Time, endTime time.Time) ([]domain.Bid, error) {
+	selectSQL := `
+SELECT bid_id, symbol, is_accepted, bid_time, asset_id, bidder_fp, seller_fp, quantity,
+       session_id, amount, quantity, expiration_time
+	FROM
+	    bid_records
+	WHERE bid_time >= $1 AND bid_time <= $2
+`
+	rows, err := querier.db.Query(ctx, selectSQL, startTime, endTime)
+	if err != nil {
+		return nil, fmt.Errorf("error querying bids in time range :: err=%w", err)
+	}
+	defer rows.Close()
 
-func (querier *bidTSQuerier) BatchSaveBid(ctx context.Context, bids []domain.Bid) (int64, error) {
-	//TODO implement me
-	panic("implement me")
+	var bids []domain.Bid
+
+	bidScanError := &BidScanError{}
+	for rows.Next() {
+		var bid domain.Bid
+		err := rows.Scan(&bid.Id,
+			&bid.Symbol,
+			&bid.Accepted,
+			&bid.Timestamp,
+			&bid.AssetId,
+			&bid.UserFp,
+			&bid.AssetOwner,
+			&bid.Quantity,
+			&bid.SessionId,
+			&bid.Amount,
+			&bid.LastUntil)
+		if err != nil {
+			bidScanError.Err = err // ⚠️!!IMPORTANT!! this will always overwrite the bidScanError error
+			bidScanError.SkipCount++
+			// log error encountered while scanning a bid
+			querier.log.Error("error scanning bid record", "err", err)
+			continue // skip this bid and continue to the next one
+		}
+		bids = append(bids, bid)
+	}
+	if bidScanError.Err != nil {
+		return bids, bidScanError // return the error encountered while scanning bids and the successfully scanned bids
+	}
+	if err := rows.Err(); err != nil {
+		return bids, fmt.Errorf("error scanning bid records :: err=%w", err) // return any other error encountered
+	}
+	return bids, nil // return the list of bids if no error was encountered
 }
 
 func NewBidTSQuerier(db *pgxpool.Pool, log slog.Logger) BidTSQuerier {
