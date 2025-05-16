@@ -26,11 +26,11 @@ type Bid struct {
 	Timestamp  time.Time `json:"timestamp" db:"bid_time"`
 	UserFp     string    `json:"placedBy" db:"bidder_fp"`
 	Accepted   bool      `json:"accepted" db:"is_accepted"`
-	SessionId  int64     `json:"sessionId" db:"session_id"`
+	SessionId  string    `json:"sessionId" db:"session_id"`
 	LastUntil  time.Time `json:"lastUntil" db:"expiration_time"`
 }
 
-func NewBid(userFp string, amount float64, assetId string, lastUntil time.Time, sessionId int64) (*Bid, error) {
+func NewBid(userFp string, amount float64, assetId string, lastUntil time.Time, sessionId string) (*Bid, error) {
 	now := time.Now()
 	if isNotValidLastingTime(lastUntil) {
 		return nil, fmt.Errorf("lasting time %s is not a valid lasting time", lastUntil)

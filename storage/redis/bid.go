@@ -13,7 +13,7 @@ import (
 )
 
 type BidCache interface {
-	SaveBid(request exchange.BidRequest, userFp string, sessionId int64, ctx context.Context) (*domain.Bid, error)
+	SaveBid(request exchange.BidRequest, userFp string, sessionId string, ctx context.Context) (*domain.Bid, error)
 }
 
 type bidCache struct {
@@ -21,7 +21,7 @@ type bidCache struct {
 	client *redis.Client
 }
 
-func (cache *bidCache) SaveBid(request exchange.BidRequest, userFp string, sessionId int64, ctx context.Context) (*domain.Bid, error) {
+func (cache *bidCache) SaveBid(request exchange.BidRequest, userFp string, sessionId string, ctx context.Context) (*domain.Bid, error) {
 	if request.Amount <= 0 {
 		return nil, errors.New("invalid amount")
 	}
@@ -45,8 +45,8 @@ func (cache *bidCache) SaveBid(request exchange.BidRequest, userFp string, sessi
 	return newBid, nil
 }
 
-func bidKey(assetId string, sessionId int64, sessionEndTime time.Time) string {
-	return fmt.Sprintf("bid_%s_%d_%d", assetId, sessionEndTime.UnixMilli(), sessionId)
+func bidKey(assetId string, sessionId string, sessionEndTime time.Time) string {
+	return fmt.Sprintf("bid_%s_%d_%s", assetId, sessionEndTime.UnixMilli(), sessionId)
 }
 
 func NewBidCache(log slog.Logger, client *redis.Client) BidCache {

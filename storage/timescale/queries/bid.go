@@ -113,6 +113,9 @@ func (querier *bidTSQuerier) BatchSave(ctx context.Context, bids []domain.Bid) (
 }
 
 func (querier *bidTSQuerier) FindBidsInTimeRange(ctx context.Context, startTime time.Time, endTime time.Time) ([]domain.Bid, error) {
+	if startTime.After(endTime) {
+		return nil, errors.New("start time must be before end time")
+	}
 	selectSQL := `
 SELECT bid_id, symbol, is_accepted, bid_time, asset_id, bidder_fp, seller_fp, quantity,
        session_id, amount, quantity, expiration_time
