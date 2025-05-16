@@ -11,7 +11,7 @@ package domain
 const (
 	DutchAuction            = "DutchAuction"
 	SealedAuction           = "SealedAuction"
-	EnglishAuction          = "EnglishAuction" // New bid must be higher than the current highest bid bid_increment_amount
+	EnglishAuction          = "EnglishAuction" // The new bid must be higher than the current highest bid bid_increment_amount
 	FixedPriceAuction       = "FixedPriceAuction"
 	FirstPriceSealedAuction = "FirstPriceSealedAuction"
 )

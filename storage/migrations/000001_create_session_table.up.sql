@@ -16,8 +16,8 @@ CREATE TYPE session_status AS ENUM (
 );
 
 CREATE TABLE IF NOT EXISTS bid_session (
-    id                   SERIAL PRIMARY KEY,
-    auto_execute         BOOLEAN          NOT NULL,
+    id                   VARCHAR(255)   NOT NULL PRIMARY KEY,
+    auto_execute         BOOLEAN           NOT NULL,
     user_fp              VARCHAR(255)     NOT NULL,
     asset_id             VARCHAR(255)     NOT NULL,
     status session_status NOT NULL,

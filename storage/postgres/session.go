@@ -10,7 +10,7 @@ import (
 )
 
 type SessionRepository interface {
-	Create(session *domain.Session, ctx context.Context) (int64, error)
+	Create(session *domain.Session, ctx context.Context) (string, error)
 	FindById(sessionId string, ctx context.Context) (*domain.Session, error)
 	FindActiveSession(assetId string, ctx context.Context) (*domain.Session, error)
 	FindAllByAssetId(assetId string, ctx context.Context) ([]domain.Session, error)
@@ -21,12 +21,12 @@ type sessionRepository struct {
 	dbPool *pgx.Conn
 }
 
-func (ses *sessionRepository) Create(session *domain.Session, ctx context.Context) (int64, error) {
+func (ses *sessionRepository) Create(session *domain.Session, ctx context.Context) (string, error) {
 	conn, err := ses.dbPool.Begin(ctx)
 	if err != nil {
-		return 0, fmt.Errorf("failed to begin create new session tx: %w", err)
+		return "", fmt.Errorf("failed to begin create new session tx: %w", err)
 	}
-	var sessionId int64
+	var sessionId string
 
 	err = conn.QueryRow(ctx, // RETURNING id: This tells PostgresSQL to return the value of the id column after insertion
 		`
@@ -50,14 +50,14 @@ RETURNING id
 	).Scan(&sessionId)
 	if err != nil {
 		if err := conn.Rollback(ctx); err != nil {
-			return 0, fmt.Errorf("failed to rollback create new session tx: %w", err)
+			return "", fmt.Errorf("failed to rollback create new session tx: %w", err)
 		}
-		return 0, err
+		return "", err
 	}
 
 	err = conn.Commit(ctx)
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 	return sessionId, nil
 }
