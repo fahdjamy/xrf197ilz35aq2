@@ -18,12 +18,12 @@ type JobsConfig struct {
 }
 
 type BidWorker struct {
-	log       slog.Logger
-	client    *redis.Client
-	timeout   time.Duration
-	sleep     time.Duration
-	tsQuerier queries.BidTSQuerier
-	bidRepo   postgres.BidRepository
+	log          slog.Logger
+	client       *redis.Client
+	timeout      time.Duration
+	sleep        time.Duration
+	tsBidQuerier queries.BidTSQuerier
+	bidRepo      postgres.BidRepository
 }
 
 // ProcessCachedBidsFromQueue --- Background Worker (separate process or goroutine)
@@ -72,19 +72,24 @@ func (worker *BidWorker) ProcessCachedBidsFromQueue(ctx context.Context, queue s
 		// 4. Log successfully stored bids
 		worker.logSavedBids("postgres", err, count, int64(len(bids)))
 
-		// 4. Save bids to the timescale db as well
-		tsRespCnt, err := worker.tsQuerier.BatchSaveBid(ctx, bids)
-		if err != nil {
-			worker.log.Error("Error saving bids to timescale", "err", err)
-			time.Sleep(worker.sleep)
-			continue
-		}
+		go saveBidsToTSDB(ctx, worker, bids)
 
-		// 5. Log successfully stored bids
-		worker.logSavedBids("timescale", err, tsRespCnt, int64(len(bids)))
+		// 6. Sleep for a while
 		time.Sleep(worker.sleep)
 		continue
 	}
+}
+
+func saveBidsToTSDB(ctx context.Context, worker *BidWorker, bids []domain.Bid) {
+	// 4. Save bids to the timescale db as well
+	tsRespCnt, err := worker.tsBidQuerier.BatchSave(ctx, bids)
+	if err != nil {
+		worker.log.Error("Error saving bids to timescale", "err", err)
+		time.Sleep(worker.sleep)
+	}
+
+	// 5. Log successfully stored bids
+	worker.logSavedBids("timescale", err, tsRespCnt, int64(len(bids)))
 }
 
 func (worker *BidWorker) logSavedBids(dbTye string, err error, count int64, expectedCnt int64, args ...interface{}) {
@@ -99,11 +104,11 @@ func (worker *BidWorker) logSavedBids(dbTye string, err error, count int64, expe
 
 func NewBidWorker(log slog.Logger, client *redis.Client, config JobsConfig, bidRepo postgres.BidRepository, tsQuerier queries.BidTSQuerier) *BidWorker {
 	return &BidWorker{
-		log:       log,
-		client:    client,
-		bidRepo:   bidRepo,
-		tsQuerier: tsQuerier,
-		sleep:     config.sleep,
-		timeout:   config.timeout,
+		log:          log,
+		client:       client,
+		bidRepo:      bidRepo,
+		tsBidQuerier: tsQuerier,
+		sleep:        config.sleep,
+		timeout:      config.timeout,
 	}
 }
