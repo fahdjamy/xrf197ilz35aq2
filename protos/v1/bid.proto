@@ -3,7 +3,7 @@ syntax = "proto3";
 import "google/protobuf/timestamp.proto";
 
 service BidService {
-  rpc SayHello(CreateBidRequest) returns (CreateBidResponse) {}
+  rpc CreateBid(CreateBidRequest) returns (CreateBidResponse) {}
 }
 
 message CreateBidRequest {
