@@ -2,6 +2,8 @@ syntax = "proto3";
 
 import "google/protobuf/timestamp.proto";
 
+option go_package = "xrf197ilz35aq2/gen/go/service/v1";
+
 service BidService {
   rpc CreateBid(CreateBidRequest) returns (CreateBidResponse) {}
 }
