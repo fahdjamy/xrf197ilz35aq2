@@ -4,7 +4,7 @@ go 1.24.0
 
 require (
 	github.com/go-playground/validator/v10 v10.26.0
-	github.com/jackc/pgx/v5 v5.7.4
+	github.com/jackc/pgx/v5 v5.7.5
 	github.com/lmittmann/tint v1.0.7
 	github.com/redis/go-redis/v9 v9.8.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
