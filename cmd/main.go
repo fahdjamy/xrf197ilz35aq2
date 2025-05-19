@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"github.com/go-playground/validator/v10"
 	"log/slog"
+	"net"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
 	"time"
 	"xrf197ilz35aq2/internal"
+	"xrf197ilz35aq2/server/grpc"
 	"xrf197ilz35aq2/storage"
 	"xrf197ilz35aq2/storage/timescale"
 	"xrf197ilz35aq2/validators"
@@ -46,7 +48,27 @@ func main() {
 		logger.Error("Register auctionType validation error: %s\n", "err", err)
 		return
 	}
+
+	// 1. Create a TCP listener on the specified port
+	gRPCPort := ":50052"
+	listener, err := net.Listen("tcp", gRPCPort)
+	if err != nil {
+		logger.Error("failed to start listening on gRPC port", "port", gRPCPort, "err", err)
+		return
+	}
+
+	grpcServer, err := grpc.NewGRPCSrv(*logger)
+	if err != nil {
+		logger.Error("failed to start gRPC server", "port", gRPCPort, "err", err)
+		return
+	}
 	logger.Info("started xrf197ilz35aq")
+
+	// start the gRPC server: Serve() will block until the process is killed or Stop() is called.
+	if err = grpcServer.Serve(listener); err != nil {
+		logger.Error("Failed to serve gRPC server: %v", err)
+		return
+	}
 
 	shutdownSignal := make(chan os.Signal, 1)
 	signal.Notify(shutdownSignal, syscall.SIGINT, syscall.SIGTERM)
