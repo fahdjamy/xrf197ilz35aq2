@@ -10,10 +10,10 @@ import (
 )
 
 type SessionRepository interface {
-	Create(session *domain.Session, ctx context.Context) (string, error)
-	FindById(sessionId string, ctx context.Context) (*domain.Session, error)
-	FindActiveSession(assetId string, ctx context.Context) (*domain.Session, error)
-	FindAllByAssetId(assetId string, ctx context.Context) ([]domain.Session, error)
+	Create(ctx context.Context, session *domain.Session) (string, error)
+	FindById(ctx context.Context, sessionId string) (*domain.Session, error)
+	FindActiveSession(ctx context.Context, assetId string) (*domain.Session, error)
+	FindAllByAssetId(ctx context.Context, assetId string) ([]domain.Session, error)
 }
 
 type sessionRepository struct {
@@ -21,7 +21,7 @@ type sessionRepository struct {
 	dbPool *pgx.Conn
 }
 
-func (ses *sessionRepository) Create(session *domain.Session, ctx context.Context) (string, error) {
+func (ses *sessionRepository) Create(ctx context.Context, session *domain.Session) (string, error) {
 	conn, err := ses.dbPool.Begin(ctx)
 	if err != nil {
 		return "", fmt.Errorf("failed to begin create new session tx: %w", err)
@@ -62,7 +62,7 @@ RETURNING id
 	return sessionId, nil
 }
 
-func (ses *sessionRepository) FindById(sessionId string, ctx context.Context) (*domain.Session, error) {
+func (ses *sessionRepository) FindById(ctx context.Context, sessionId string) (*domain.Session, error) {
 	session := &domain.Session{}
 	err := ses.dbPool.QueryRow(ctx, `
 SELECT id, 
@@ -101,7 +101,7 @@ WHERE id = $1`, sessionId).Scan(
 	return session, nil
 }
 
-func (ses *sessionRepository) FindAllByAssetId(assetId string, ctx context.Context) ([]domain.Session, error) {
+func (ses *sessionRepository) FindAllByAssetId(ctx context.Context, assetId string) ([]domain.Session, error) {
 	sql := `
 SELECT 
 	id, auto_execute, user_fp, asset_id, status, session_name, reserve_price, auction_type, end_time, created_at, 
@@ -139,7 +139,7 @@ WHERE asset_id = $1
 	return sessions, nil
 }
 
-func (ses *sessionRepository) FindActiveSession(assetId string, ctx context.Context) (*domain.Session, error) {
+func (ses *sessionRepository) FindActiveSession(ctx context.Context, assetId string) (*domain.Session, error) {
 	now := time.Now()
 	sql := `
 SELECT id, auto_execute, user_fp, asset_id, status, session_name, reserve_price, auction_type, end_time, created_at, 
