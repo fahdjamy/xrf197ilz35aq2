@@ -19,7 +19,9 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	BidService_CreateBid_FullMethodName = "/BidService/CreateBid"
+	BidService_CreateBid_FullMethodName      = "/BidService/CreateBid"
+	BidService_GetUserBid_FullMethodName     = "/BidService/GetUserBid"
+	BidService_StreamOpenBids_FullMethodName = "/BidService/StreamOpenBids"
 )
 
 // BidServiceClient is the client API for BidService service.
@@ -27,6 +29,8 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type BidServiceClient interface {
 	CreateBid(ctx context.Context, in *CreateBidRequest, opts ...grpc.CallOption) (*CreateBidResponse, error)
+	GetUserBid(ctx context.Context, in *GetUserBidRequest, opts ...grpc.CallOption) (*GetUserBidResponse, error)
+	StreamOpenBids(ctx context.Context, in *StreamOpenBidsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[StreamOpenBidsResponse], error)
 }
 
 type bidServiceClient struct {
@@ -47,11 +51,42 @@ func (c *bidServiceClient) CreateBid(ctx context.Context, in *CreateBidRequest, 
 	return out, nil
 }
 
+func (c *bidServiceClient) GetUserBid(ctx context.Context, in *GetUserBidRequest, opts ...grpc.CallOption) (*GetUserBidResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetUserBidResponse)
+	err := c.cc.Invoke(ctx, BidService_GetUserBid_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *bidServiceClient) StreamOpenBids(ctx context.Context, in *StreamOpenBidsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[StreamOpenBidsResponse], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &BidService_ServiceDesc.Streams[0], BidService_StreamOpenBids_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[StreamOpenBidsRequest, StreamOpenBidsResponse]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type BidService_StreamOpenBidsClient = grpc.ServerStreamingClient[StreamOpenBidsResponse]
+
 // BidServiceServer is the server API for BidService service.
 // All implementations must embed UnimplementedBidServiceServer
 // for forward compatibility.
 type BidServiceServer interface {
 	CreateBid(context.Context, *CreateBidRequest) (*CreateBidResponse, error)
+	GetUserBid(context.Context, *GetUserBidRequest) (*GetUserBidResponse, error)
+	StreamOpenBids(*StreamOpenBidsRequest, grpc.ServerStreamingServer[StreamOpenBidsResponse]) error
 	mustEmbedUnimplementedBidServiceServer()
 }
 
@@ -64,6 +99,12 @@ type UnimplementedBidServiceServer struct{}
 
 func (UnimplementedBidServiceServer) CreateBid(context.Context, *CreateBidRequest) (*CreateBidResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateBid not implemented")
+}
+func (UnimplementedBidServiceServer) GetUserBid(context.Context, *GetUserBidRequest) (*GetUserBidResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetUserBid not implemented")
+}
+func (UnimplementedBidServiceServer) StreamOpenBids(*StreamOpenBidsRequest, grpc.ServerStreamingServer[StreamOpenBidsResponse]) error {
+	return status.Errorf(codes.Unimplemented, "method StreamOpenBids not implemented")
 }
 func (UnimplementedBidServiceServer) mustEmbedUnimplementedBidServiceServer() {}
 func (UnimplementedBidServiceServer) testEmbeddedByValue()                    {}
@@ -104,6 +145,35 @@ func _BidService_CreateBid_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _BidService_GetUserBid_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserBidRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BidServiceServer).GetUserBid(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BidService_GetUserBid_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BidServiceServer).GetUserBid(ctx, req.(*GetUserBidRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BidService_StreamOpenBids_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(StreamOpenBidsRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(BidServiceServer).StreamOpenBids(m, &grpc.GenericServerStream[StreamOpenBidsRequest, StreamOpenBidsResponse]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type BidService_StreamOpenBidsServer = grpc.ServerStreamingServer[StreamOpenBidsResponse]
+
 // BidService_ServiceDesc is the grpc.ServiceDesc for BidService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -115,7 +185,17 @@ var BidService_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "CreateBid",
 			Handler:    _BidService_CreateBid_Handler,
 		},
+		{
+			MethodName: "GetUserBid",
+			Handler:    _BidService_GetUserBid_Handler,
+		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "StreamOpenBids",
+			Handler:       _BidService_StreamOpenBids_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "bid/v1/bid.proto",
 }
