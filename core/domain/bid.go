@@ -19,7 +19,6 @@ type Bid struct {
 	Id         string    `json:"bidId" db:"id"`
 	AssetOwner string    `json:"_" db:"seller_fp"`
 	Amount     float64   `json:"amount" db:"amount"`
-	Symbol     string    `json:"symbol" db:"symbol"`
 	Quantity   float64   `json:"quantity" db:"quantity"`
 	AssetId    string    `json:"assetId" db:"asset_id"`
 	Status     string    `json:"status" db:"bid_status"`
