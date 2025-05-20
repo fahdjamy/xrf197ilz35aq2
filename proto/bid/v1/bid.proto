@@ -6,20 +6,54 @@ option go_package = "xrf197ilz35aq2/gen/go/service/v1";
 
 service BidService {
   rpc CreateBid(CreateBidRequest) returns (CreateBidResponse) {}
+  rpc GetUserBid(GetUserBidRequest) returns (GetUserBidResponse) {}
+  rpc StreamOpenBids(StreamOpenBidsRequest) returns (stream StreamOpenBidsResponse) {}
 }
 
-message CreateBidRequest {
-  int32 amount = 1;
+message BidResponse {
+  float amount = 1;
   string symbol = 2;
-  int32 quantity = 3;
+  float quantity = 3;
   string asset_id = 4;
-  string asset_owner = 5;
+  string session_id = 5;
   google.protobuf.Timestamp last_until = 7;
 }
 
+////// Create Bid
+message CreateBidRequest {
+  float amount = 1;
+  float quantity = 2;
+  string asset_id = 3;
+  string asset_owner = 4;
+  google.protobuf.Timestamp last_until = 5;
+}
+
 message CreateBidResponse {
-  bool created = 1;
-  string bid_id = 2;
-  bool is_accepted = 3;
-  string session_id = 4;
+    BidResponse bid = 1;
+}
+
+///// Get all the user's bid on an asset
+
+message GetUserBidRequest {
+  int64 limit = 1;
+  int64 offset = 2;
+  string user_fp = 3;
+  string asset_id = 4;
+}
+
+message GetUserBidResponse {
+  repeated BidResponse bids = 1;
+}
+
+//// Get all open bids for a request
+
+message StreamOpenBidsRequest {
+  string asset_id = 1;
+}
+
+message StreamOpenBidsResponse {
+  int64 offset = 1;
+  int64 results_count = 2;
+  int64 total_results = 3;
+  repeated BidResponse bids = 4;
 }
