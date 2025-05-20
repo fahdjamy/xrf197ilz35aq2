@@ -12,11 +12,10 @@ service BidService {
 
 message BidResponse {
   float amount = 1;
-  string symbol = 2;
-  float quantity = 3;
-  string asset_id = 4;
-  string session_id = 5;
-  google.protobuf.Timestamp last_until = 7;
+  float quantity = 2;
+  string asset_id = 3;
+  string session_id = 4;
+  google.protobuf.Timestamp last_until = 5;
 }
 
 ////// Create Bid

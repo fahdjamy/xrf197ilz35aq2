@@ -38,10 +38,13 @@ func (srv *BidService) CreateBid(ctx context.Context, request *v1.CreateBidReque
 		return nil, err
 	}
 	return &v1.CreateBidResponse{
-		Created:    true,
-		BidId:      bid.Id,
-		IsAccepted: bid.Accepted,
-		SessionId:  activeSession.Id,
+		Bid: &v1.BidResponse{
+			AssetId:   bid.AssetId,
+			SessionId: activeSession.Id,
+			LastUntil: request.LastUntil,
+			Amount:    float32(bid.Amount),
+			Quantity:  float32(bid.Quantity),
+		},
 	}, nil
 }
 

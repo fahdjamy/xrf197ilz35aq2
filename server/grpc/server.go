@@ -15,10 +15,7 @@ func NewGRPCSrv(log slog.Logger, cacheClient redis.CacheClients) (*grpc.Server, 
 	grpcServer := grpc.NewServer()
 
 	// 2. Register your service implementation with the gRPC server.
-	v1.RegisterBidServiceServer(grpcServer, &services.BidService{
-		Log:            log,
-		BidCacheClient: cacheClient.BidClient,
-	})
+	v1.RegisterBidServiceServer(grpcServer, services.NewBidService(log, cacheClient.BidClient))
 
 	// 3. Optional: Register gRPC server reflection.
 	// This allows gRPC clients (like grpcurl or a GUI client) to query what services and methods are available on
