@@ -13,6 +13,7 @@ type BidRepository interface {
 	CreateBid(ctx context.Context, request domain.Bid) (string, error)
 	BatchCreateBids(ctx context.Context, bids []domain.Bid) (int64, error)
 	CreateBidsCopyFrom(ctx context.Context, bids []domain.Bid) (int64, error)
+	FetchBidsByUserFp(ctx context.Context, offset int64, limit int64, userFp string) ([]domain.Bid, error)
 }
 
 type bidRepository struct {
@@ -113,6 +114,52 @@ func (repo *bidRepository) CreateBidsCopyFrom(ctx context.Context, bids []domain
 		return 0, fmt.Errorf("error bulk copying/creating bid rows: %w", err)
 	}
 	return count, nil
+}
+
+func (repo *bidRepository) FetchBidsByUserFp(ctx context.Context, offset int64, limit int64, userFp string) ([]domain.Bid, error) {
+	sql := `
+SELECT id, amount, asset_id, bid_status, accepted, placed_by, placed_at, last_until, session_id
+FROM bid
+WHERE placed_by = $1
+ORDER BY placed_at DESC
+LIMIT $2 OFFSET $3`
+	rows, err := repo.dbPool.Query(ctx, sql, userFp, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("error fetching bids by user_fp: %w", err)
+	}
+	// Close the rows when we're done with them'
+	defer rows.Close()
+	var bids []domain.Bid
+	rowScanError := &RowScanError{}
+	for rows.Next() {
+		var bid domain.Bid
+		err = rows.Scan(
+			&bid.Id,
+			&bid.Amount,
+			&bid.AssetId,
+			&bid.Status,
+			&bid.Accepted,
+			&bid.UserFp,
+			&bid.Timestamp,
+			&bid.LastUntil,
+			&bid.SessionId,
+		)
+		if err != nil {
+			rowScanError.Err = err // ⚠️!!IMPORTANT!! this will always overwrite the rowScanError error
+			rowScanError.SkipCount++
+			repo.log.Error("error scanning bid record", "err", err) // log errors encountered while scanning
+			continue                                                // skip this bid and continue to the next one
+		}
+		bids = append(bids, bid)
+	}
+	if rowScanError.Err != nil {
+		return bids, rowScanError // return the error encountered while scanning bids and the successfully scanned bids
+	}
+
+	if err := rows.Err(); err != nil {
+		return bids, fmt.Errorf("error scanning bid records: %w", err) // return any other error encountered
+	}
+	return bids, nil
 }
 
 func NewBidService(dbPool *pgx.Conn, log slog.Logger) BidRepository {

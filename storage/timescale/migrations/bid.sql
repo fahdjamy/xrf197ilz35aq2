@@ -1,6 +1,5 @@
 CREATE TABLE IF NOT EXISTS bid_records (
     bid_id VARCHAR(255) NOT NULL,
-    symbol TEXT NOT NULL,
     is_accepted BOOLEAN,
     bid_time TIMESTAMPTZ NOT NULL,
     asset_id VARCHAR(255) NOT NULL,

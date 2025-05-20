@@ -37,11 +37,11 @@ type bidTSQuerier struct {
 func (querier *bidTSQuerier) SaveBid(ctx context.Context, bid domain.Bid) (bool, error) {
 	insertSQL := `
 INSERT INTO bid_records
-    (id, symbol, is_accepted, asset_id, bidder_fp, seller_fp, bid_time, session_id, amount, quantity, expiration_time)
+    (id, is_accepted, asset_id, bidder_fp, seller_fp, bid_time, session_id, amount, quantity, expiration_time)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);
 `
 	result, err := querier.db.Exec(ctx, insertSQL, bid.Id,
-		bid.Symbol, bid.AssetId, bid.UserFp, bid.AssetOwner,
+		bid.AssetId, bid.UserFp, bid.AssetOwner,
 		bid.Timestamp, bid.SessionId, bid.Amount,
 		bid.Quantity, bid.LastUntil)
 	if err != nil {
@@ -68,7 +68,6 @@ func (querier *bidTSQuerier) BatchSave(ctx context.Context, bids []domain.Bid) (
 	for i, bid := range bids {
 		copyData[i] = []interface{}{
 			bid.Id,
-			bid.Symbol,
 			bid.AssetId,
 			bid.UserFp,
 			bid.AssetOwner,
@@ -135,7 +134,6 @@ SELECT bid_id, symbol, is_accepted, bid_time, asset_id, bidder_fp, seller_fp, qu
 	for rows.Next() {
 		var bid domain.Bid
 		err := rows.Scan(&bid.Id,
-			&bid.Symbol,
 			&bid.Accepted,
 			&bid.Timestamp,
 			&bid.AssetId,
