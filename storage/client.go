@@ -75,7 +75,7 @@ func NewPGConnection(ctx context.Context, dbUrl string, log slog.Logger) (pool *
 	return pgInstance, nil
 }
 
-func NewRedisClient(redisConfig internal.RedisConfig, ctx context.Context) (*redis.Client, error) {
+func NewRedisClient(ctx context.Context, redisConfig internal.RedisConfig) (*redis.Client, error) {
 	redisOnce.Do(func() {
 		client := redis.NewClient(&redis.Options{
 			Addr:         redisConfig.Address,

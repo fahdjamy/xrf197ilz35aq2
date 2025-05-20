@@ -17,7 +17,6 @@ type BidService struct {
 }
 
 func (srv *BidService) CreateBid(ctx context.Context, request *v1.CreateBidRequest) (*v1.CreateBidResponse, error) {
-	srv.Log.Info("CreateBid called")
 
 	userFp := "should be fetched from auth token"
 
@@ -25,6 +24,7 @@ func (srv *BidService) CreateBid(ctx context.Context, request *v1.CreateBidReque
 	if err != nil {
 		return nil, err
 	}
+	srv.Log.Info("placing bid", "assetId", request.AssetId, "sessionId", activeSession.Id)
 
 	bidRequest := exchange.BidRequest{
 		UserFp:    userFp,

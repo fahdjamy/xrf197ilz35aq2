@@ -14,9 +14,12 @@ import (
 	"xrf197ilz35aq2/internal"
 	"xrf197ilz35aq2/server/grpc"
 	"xrf197ilz35aq2/storage"
+	"xrf197ilz35aq2/storage/redis"
 	"xrf197ilz35aq2/storage/timescale"
 	"xrf197ilz35aq2/validators"
 )
+
+const gRPCPortAddress = ":50052"
 
 func main() {
 	env := getAppEnv()
@@ -49,26 +52,39 @@ func main() {
 		return
 	}
 
+	// /////// Set up redis client
+	redisClient, err := storage.NewRedisClient(context.Background(), config.Redis)
+	if err != nil {
+		logger.Error("failed to create redis client", "err", err)
+		return
+	}
+
+	cacheClient := redis.CacheClients{
+		BidClient: redis.NewBidCache(*logger, redisClient),
+	}
+
 	// 1. Create a TCP listener on the specified port
-	gRPCPort := ":50052"
-	listener, err := net.Listen("tcp", gRPCPort)
+	listener, err := net.Listen("tcp", gRPCPortAddress)
 	if err != nil {
-		logger.Error("failed to start listening on gRPC port", "port", gRPCPort, "err", err)
+		logger.Error("failed to start listening on gRPC port", "port", gRPCPortAddress, "err", err)
 		return
 	}
 
-	grpcServer, err := grpc.NewGRPCSrv(*logger)
+	// 2. create a gRPC server
+	grpcServer, err := grpc.NewGRPCSrv(*logger, cacheClient)
 	if err != nil {
-		logger.Error("failed to start gRPC server", "port", gRPCPort, "err", err)
+		logger.Error("failed to start gRPC server", "port", gRPCPortAddress, "err", err)
 		return
 	}
-	logger.Info("started xrf197ilz35aq")
 
-	// start the gRPC server: Serve() will block until the process is killed or Stop() is called.
+	// 3. start the gRPC server
+	//	  :: Serve() will block until the process is killed or Stop() is called.
 	if err = grpcServer.Serve(listener); err != nil {
-		logger.Error("Failed to serve gRPC server: %v", err)
+		logger.Error("Failed to serve gRPC server", "err", err)
 		return
 	}
+
+	logger.Info("**** started xrf197ilz35aq (ii) app *****")
 
 	shutdownSignal := make(chan os.Signal, 1)
 	signal.Notify(shutdownSignal, syscall.SIGINT, syscall.SIGTERM)
