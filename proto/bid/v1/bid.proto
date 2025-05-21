@@ -50,7 +50,9 @@ message GetUserBidResponse {
 //// Get all open bids for a request
 
 message StreamOpenBidsRequest {
-  string asset_id = 1;
+  int64 limit = 1;
+  int64 offset = 2;
+  string asset_id = 3;
 }
 
 message StreamOpenBidsResponse {

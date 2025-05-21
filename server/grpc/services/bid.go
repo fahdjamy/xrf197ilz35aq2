@@ -3,8 +3,10 @@ package services
 import (
 	"context"
 	"fmt"
+	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"log/slog"
+	"time"
 	v1 "xrf197ilz35aq2/gen/go/service/v1"
 	"xrf197ilz35aq2/internal/exchange"
 	"xrf197ilz35aq2/storage/postgres"
@@ -81,8 +83,71 @@ func (srv *BidService) GetUserBid(ctx context.Context, request *v1.GetUserBidReq
 		Bids:         bidResponses,
 		Offset:       request.Offset,
 		RowCount:     int64(len(bids)),
-		TotalResults: 0, // TODO
+		TotalResults: 0, // TODO fetch actual total results
 	}, nil
+}
+
+func (srv *BidService) StreamOpenBids(req *v1.StreamOpenBidsRequest, srvStream grpc.ServerStreamingServer[v1.StreamOpenBidsResponse]) error {
+	if req.AssetId == "" {
+		return fmt.Errorf("assetId is required")
+	}
+	if req.Offset < 0 {
+		return fmt.Errorf("offset must be greater than or equal to 0")
+	}
+	if req.Limit < 0 || req.Limit > 200 {
+		return fmt.Errorf("limit must be less than or equal to 100")
+	}
+
+	limit := req.Limit
+	offset := req.Offset
+	activeSession, err := srv.SessionRepo.FindActiveSession(srvStream.Context(), req.AssetId)
+	if err != nil {
+		return err
+	}
+	srv.Log.Info("streaming open bids", "assetId", req.AssetId, "sessionId", activeSession.Id)
+
+	for {
+		// Check if the client context is canceled (e.g., a client disconnected)
+		if err = srvStream.Context().Err(); err != nil {
+			return err
+		}
+
+		pgCtx, cancelPgCtx := context.WithTimeout(srvStream.Context(), 10*time.Second)
+		bids, err := srv.BidRepo.FetchBidsByAssetIdAndSessionId(pgCtx, offset, limit, req.AssetId, activeSession.Id)
+		if err != nil {
+			cancelPgCtx()
+			return err
+		}
+		cancelPgCtx()
+
+		// if there are no more bids, stop streaming and return
+		// TODO: Should we sleep or exist?
+		if len(bids) == 0 {
+			return nil
+		}
+
+		// Send the response message over the stream.
+		var bidResponses []*v1.BidResponse
+		for _, bid := range bids {
+			bidResponses = append(bidResponses, &v1.BidResponse{
+				AssetId:   bid.AssetId,
+				SessionId: bid.SessionId,
+				Amount:    float32(bid.Amount),
+				Quantity:  float32(bid.Quantity),
+				LastUntil: timestamppb.New(bid.LastUntil),
+			})
+		}
+
+		// update offset value
+		offset += limit
+
+		err = srvStream.Send(&v1.StreamOpenBidsResponse{
+			Bids: bidResponses,
+		})
+		if err != nil {
+			return err
+		}
+	}
 }
 
 func NewBidService(log slog.Logger, bidCache redis.BidCache) *BidService {
