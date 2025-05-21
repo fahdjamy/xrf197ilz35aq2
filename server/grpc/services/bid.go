@@ -2,6 +2,8 @@ package services
 
 import (
 	"context"
+	"fmt"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"log/slog"
 	v1 "xrf197ilz35aq2/gen/go/service/v1"
 	"xrf197ilz35aq2/internal/exchange"
@@ -12,8 +14,10 @@ import (
 type BidService struct {
 	Log            slog.Logger
 	BidCacheClient redis.BidCache
+	BidRepo        postgres.BidRepository
+	SessionRepo    postgres.SessionRepository
+
 	v1.UnimplementedBidServiceServer
-	SessionRepo postgres.SessionRepository
 }
 
 func (srv *BidService) CreateBid(ctx context.Context, request *v1.CreateBidRequest) (*v1.CreateBidResponse, error) {
@@ -45,6 +49,39 @@ func (srv *BidService) CreateBid(ctx context.Context, request *v1.CreateBidReque
 			Amount:    float32(bid.Amount),
 			Quantity:  float32(bid.Quantity),
 		},
+	}, nil
+}
+
+func (srv *BidService) GetUserBid(ctx context.Context, request *v1.GetUserBidRequest) (*v1.GetUserBidResponse, error) {
+	if request.AssetId == "" {
+		return nil, fmt.Errorf("assetId is required")
+	}
+	if request.Offset < 0 {
+		return nil, fmt.Errorf("offset must be greater than or equal to 0")
+	}
+	if request.Limit < 0 || request.Limit > 100 {
+		return nil, fmt.Errorf("limit must be less than or equal to 100")
+	}
+
+	bids, err := srv.BidRepo.FetchBidsByUserFp(ctx, request.Offset, request.Limit, request.UserFp)
+	if err != nil {
+		return nil, err
+	}
+	var bidResponses []*v1.BidResponse
+	for _, bid := range bids {
+		bidResponses = append(bidResponses, &v1.BidResponse{
+			AssetId:   bid.AssetId,
+			SessionId: bid.SessionId,
+			Amount:    float32(bid.Amount),
+			Quantity:  float32(bid.Quantity),
+			LastUntil: timestamppb.New(bid.LastUntil),
+		})
+	}
+	return &v1.GetUserBidResponse{
+		Bids:         bidResponses,
+		Offset:       request.Offset,
+		RowCount:     int64(len(bids)),
+		TotalResults: 0, // TODO
 	}, nil
 }
 
