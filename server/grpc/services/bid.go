@@ -150,9 +150,10 @@ func (srv *BidService) StreamOpenBids(req *v1.StreamOpenBidsRequest, srvStream g
 	}
 }
 
-func NewBidService(log slog.Logger, bidCache redis.BidCache) *BidService {
+func NewBidService(log slog.Logger, bidCache redis.BidCache, BidRepo postgres.BidRepository) *BidService {
 	return &BidService{
 		Log:            log,
 		BidCacheClient: bidCache,
+		BidRepo:        BidRepo,
 	}
 }

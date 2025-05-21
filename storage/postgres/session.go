@@ -3,7 +3,7 @@ package postgres
 import (
 	"context"
 	"fmt"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"log/slog"
 	"time"
 	"xrf197ilz35aq2/core/domain"
@@ -18,7 +18,7 @@ type SessionRepository interface {
 
 type sessionRepository struct {
 	log    slog.Logger
-	dbPool *pgx.Conn
+	dbPool *pgxpool.Pool
 }
 
 func (ses *sessionRepository) Create(ctx context.Context, session *domain.Session) (string, error) {
@@ -184,6 +184,6 @@ AND end_time > $2`
 	return &sessions[0], nil
 }
 
-func NewSessionRepository(log slog.Logger, dbPool *pgx.Conn) SessionRepository {
+func NewSessionRepository(dbPool *pgxpool.Pool, log slog.Logger) SessionRepository {
 	return &sessionRepository{log: log, dbPool: dbPool}
 }

@@ -14,6 +14,7 @@ import (
 	"xrf197ilz35aq2/internal"
 	"xrf197ilz35aq2/server/grpc"
 	"xrf197ilz35aq2/storage"
+	"xrf197ilz35aq2/storage/postgres"
 	"xrf197ilz35aq2/storage/redis"
 	"xrf197ilz35aq2/storage/timescale"
 	"xrf197ilz35aq2/validators"
@@ -59,8 +60,20 @@ func main() {
 		return
 	}
 
+	// /////// Set up postgres client
+	pgPool, err := storage.NewPGConnection(context.Background(), config.Postgres.DatabaseURL, *logger)
+	if err != nil {
+		logger.Error("failed to create postgres client", "err", err)
+		return
+	}
+	defer pgPool.Close()
+
 	cacheClient := redis.CacheClients{
 		BidClient: redis.NewBidCache(*logger, redisClient),
+	}
+	allRepos := postgres.Repositories{
+		BidRepository:     postgres.NewBidRepo(pgPool.Pool, *logger),
+		SessionRepository: postgres.NewSessionRepository(pgPool.Pool, *logger),
 	}
 
 	// 1. Create a TCP listener on the specified port
@@ -71,7 +84,7 @@ func main() {
 	}
 
 	// 2. create a gRPC server
-	grpcServer, err := grpc.NewGRPCSrv(*logger, cacheClient)
+	grpcServer, err := grpc.NewGRPCSrv(*logger, cacheClient, allRepos)
 	if err != nil {
 		logger.Error("failed to start gRPC server", "port", gRPCPortAddress, "err", err)
 		return

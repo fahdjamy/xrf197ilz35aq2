@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"log/slog"
 	"xrf197ilz35aq2/core/domain"
 	"xrf197ilz35aq2/storage/postgres/dao"
@@ -19,7 +20,7 @@ type BidRepository interface {
 
 type bidRepository struct {
 	log    slog.Logger
-	dbPool *pgx.Conn
+	dbPool *pgxpool.Pool
 }
 
 func (repo *bidRepository) CreateBid(ctx context.Context, newBid domain.Bid) (string, error) {
@@ -208,7 +209,7 @@ LIMIT $3 OFFSET $4`
 	return bids, nil
 }
 
-func NewBidRepo(dbPool *pgx.Conn, log slog.Logger) BidRepository {
+func NewBidRepo(dbPool *pgxpool.Pool, log slog.Logger) BidRepository {
 	return &bidRepository{
 		dbPool: dbPool,
 		log:    log,
