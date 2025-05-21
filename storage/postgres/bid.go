@@ -14,6 +14,7 @@ type BidRepository interface {
 	BatchCreateBids(ctx context.Context, bids []domain.Bid) (int64, error)
 	CreateBidsCopyFrom(ctx context.Context, bids []domain.Bid) (int64, error)
 	FetchBidsByUserFp(ctx context.Context, offset int64, limit int64, userFp string) ([]domain.Bid, error)
+	FetchBidsByAssetIdAndSessionId(ctx context.Context, offset int64, limit int64, assetId string, sessionId string) ([]domain.Bid, error)
 }
 
 type bidRepository struct {
@@ -162,7 +163,52 @@ LIMIT $2 OFFSET $3`
 	return bids, nil
 }
 
-func NewBidService(dbPool *pgx.Conn, log slog.Logger) BidRepository {
+func (repo *bidRepository) FetchBidsByAssetIdAndSessionId(ctx context.Context, offset int64, limit int64, assetId string, sessionId string) ([]domain.Bid, error) {
+	sql := `
+SELECT id, amount, asset_id, bid_status, accepted, placed_by, placed_at, last_until, session_id
+FROM bid
+WHERE asset_id = $1 AND session_id = $2
+ORDER BY placed_at DESC
+LIMIT $3 OFFSET $4`
+	rows, err := repo.dbPool.Query(ctx, sql, assetId, sessionId, limit, offset)
+
+	if err != nil {
+		return nil, fmt.Errorf("error fetching bids by asset_id and session_id: %w", err)
+	}
+	// Close the rows when we're done with them'
+	defer rows.Close()
+	var bids []domain.Bid
+	rowScanError := &RowScanError{}
+	for rows.Next() {
+		var bid domain.Bid
+		err = rows.Scan(
+			&bid.Id,
+			&bid.Amount,
+			&bid.AssetId,
+			&bid.Status,
+			&bid.Accepted,
+			&bid.UserFp,
+			&bid.Timestamp,
+		)
+		if err != nil {
+			rowScanError.Err = err
+			rowScanError.SkipCount++
+			repo.log.Error("error scanning bid record", "err", err)
+			continue
+		}
+		bids = append(bids, bid)
+	}
+	if rowScanError.Err != nil {
+		return bids, rowScanError
+	}
+
+	if err := rows.Err(); err != nil {
+		return bids, fmt.Errorf("error scanning bid records: %w", err)
+	}
+	return bids, nil
+}
+
+func NewBidRepo(dbPool *pgx.Conn, log slog.Logger) BidRepository {
 	return &bidRepository{
 		dbPool: dbPool,
 		log:    log,
