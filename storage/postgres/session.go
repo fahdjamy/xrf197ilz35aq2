@@ -26,15 +26,15 @@ func (ses *sessionRepository) Create(ctx context.Context, session *domain.Sessio
 	if err != nil {
 		return "", fmt.Errorf("failed to begin create new session tx: %w", err)
 	}
-	var sessionId string
 
-	err = conn.QueryRow(ctx, // RETURNING id: This tells PostgresSQL to return the value of the id column after insertion
+	results, err := conn.Exec(ctx, // RETURNING id: This tells PostgresSQL to return the value of the id column after insertion
 		`
-INSERT INTO  sessions (session_name, user_fp, asset_id, created_at, end_time, start_time, status,
+INSERT INTO  sessions (id, session_name, user_fp, asset_id, created_at, end_time, start_time, status,
                        current_highest_bid, auction_type, reserve_price, auto_execute, bid_increment_amount)
 VALUES ($1, $2, $3,  $4, $5, $6, $7, $8, $9, $10, $11,  $12)
 RETURNING id
 `,
+		session.Id,
 		session.Name,
 		session.UserFp,
 		session.AssetId,
@@ -47,19 +47,22 @@ RETURNING id
 		session.ReservePrice,
 		session.AutoExecute,
 		session.BidIncrementAmount,
-	).Scan(&sessionId)
+	)
 	if err != nil {
-		if err := conn.Rollback(ctx); err != nil {
+		if err = conn.Rollback(ctx); err != nil {
 			return "", fmt.Errorf("failed to rollback create new session tx: %w", err)
 		}
 		return "", err
+	}
+	if results.RowsAffected() != 1 {
+		return "", fmt.Errorf("failed to create new session, no rows affected")
 	}
 
 	err = conn.Commit(ctx)
 	if err != nil {
 		return "", err
 	}
-	return sessionId, nil
+	return session.Id, nil
 }
 
 func (ses *sessionRepository) FindById(ctx context.Context, sessionId string) (*domain.Session, error) {

@@ -13,7 +13,7 @@ import (
 	"xrf197ilz35aq2/storage/redis"
 )
 
-type BidService struct {
+type bidService struct {
 	Log            slog.Logger
 	BidCacheClient redis.BidCache
 	BidRepo        postgres.BidRepository
@@ -22,7 +22,7 @@ type BidService struct {
 	v1.UnimplementedBidServiceServer
 }
 
-func (srv *BidService) CreateBid(ctx context.Context, request *v1.CreateBidRequest) (*v1.CreateBidResponse, error) {
+func (srv *bidService) CreateBid(ctx context.Context, request *v1.CreateBidRequest) (*v1.CreateBidResponse, error) {
 
 	userFp := "should be fetched from auth token"
 
@@ -54,7 +54,7 @@ func (srv *BidService) CreateBid(ctx context.Context, request *v1.CreateBidReque
 	}, nil
 }
 
-func (srv *BidService) GetUserBid(ctx context.Context, request *v1.GetUserBidRequest) (*v1.GetUserBidResponse, error) {
+func (srv *bidService) GetUserBid(ctx context.Context, request *v1.GetUserBidRequest) (*v1.GetUserBidResponse, error) {
 	if request.AssetId == "" {
 		return nil, fmt.Errorf("assetId is required")
 	}
@@ -87,7 +87,7 @@ func (srv *BidService) GetUserBid(ctx context.Context, request *v1.GetUserBidReq
 	}, nil
 }
 
-func (srv *BidService) StreamOpenBids(req *v1.StreamOpenBidsRequest, srvStream grpc.ServerStreamingServer[v1.StreamOpenBidsResponse]) error {
+func (srv *bidService) StreamOpenBids(req *v1.StreamOpenBidsRequest, srvStream grpc.ServerStreamingServer[v1.StreamOpenBidsResponse]) error {
 	if req.AssetId == "" {
 		return fmt.Errorf("assetId is required")
 	}
@@ -153,8 +153,8 @@ func (srv *BidService) StreamOpenBids(req *v1.StreamOpenBidsRequest, srvStream g
 	}
 }
 
-func NewBidService(log slog.Logger, bidCache redis.BidCache, BidRepo postgres.BidRepository) *BidService {
-	return &BidService{
+func NewBidService(log slog.Logger, bidCache redis.BidCache, BidRepo postgres.BidRepository) v1.BidServiceServer {
+	return &bidService{
 		Log:            log,
 		BidCacheClient: bidCache,
 		BidRepo:        BidRepo,
