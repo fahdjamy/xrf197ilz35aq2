@@ -6,9 +6,8 @@ option go_package = "xrf197ilz35aq2/gen/go/service/session/v1";
 
 service SessionService {
   rpc CreateSession(CreateSessionRequest) returns (CreateSessionResponse);
+  rpc GetActiveAssetSession(GetActiveAssetSessionRequest) returns (GetActiveAssetSessionResponse);
 }
-
-// //////// create session
 
 message SessionResponse {
   string status = 1;
@@ -26,6 +25,8 @@ message SessionResponse {
   google.protobuf.Timestamp created_at = 13;
 }
 
+// //////// create session
+
 message CreateSessionRequest {
   string asset_id = 1;
   bool auto_execute = 2;
@@ -39,4 +40,14 @@ message CreateSessionRequest {
 
 message CreateSessionResponse {
     SessionResponse session = 1;
+}
+
+// //////// find active asset session
+
+message GetActiveAssetSessionRequest {
+  string asset_id = 1;
+}
+
+message GetActiveAssetSessionResponse {
+  optional SessionResponse session = 1;
 }

@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"log/slog"
 	"xrf197ilz35aq2/core/domain"
@@ -56,6 +57,33 @@ func (srvc *sessionService) CreateSession(ctx context.Context, req *v1.CreateSes
 			CreatedAt:          timestamppb.New(newSession.CreatedAt),
 			CurrentHighestBid:  float32(newSession.CurrentHighestBid),
 			BidIncrementAmount: float32(newSession.BidIncrementAmount),
+		},
+	}, nil
+}
+
+func (srvc *sessionService) GetActiveAssetSession(ctx context.Context, req *v1.GetActiveAssetSessionRequest) (*v1.GetActiveAssetSessionResponse, error) {
+	activeSession, err := srvc.sessionRepo.FindActiveSession(ctx, req.AssetId)
+	if err != nil {
+		return nil, err
+	}
+
+	if activeSession == nil {
+		return nil, fmt.Errorf("no active session found for assetId=%s", req.AssetId)
+	}
+
+	return &v1.GetActiveAssetSessionResponse{
+		Session: &v1.SessionResponse{
+			SessionId:          activeSession.Id,
+			Name:               &activeSession.Name,
+			Status:             activeSession.Status,
+			AuctionType:        activeSession.ActionType,
+			AutoExecute:        activeSession.AutoExecute,
+			ReservePrice:       float32(activeSession.ReservePrice),
+			EndTime:            timestamppb.New(activeSession.EndTime),
+			StartTime:          timestamppb.New(activeSession.StartTime),
+			CreatedAt:          timestamppb.New(activeSession.CreatedAt),
+			CurrentHighestBid:  float32(activeSession.CurrentHighestBid),
+			BidIncrementAmount: float32(activeSession.BidIncrementAmount),
 		},
 	}, nil
 }

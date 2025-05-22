@@ -19,7 +19,8 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	SessionService_CreateSession_FullMethodName = "/SessionService/CreateSession"
+	SessionService_CreateSession_FullMethodName         = "/SessionService/CreateSession"
+	SessionService_GetActiveAssetSession_FullMethodName = "/SessionService/GetActiveAssetSession"
 )
 
 // SessionServiceClient is the client API for SessionService service.
@@ -27,6 +28,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SessionServiceClient interface {
 	CreateSession(ctx context.Context, in *CreateSessionRequest, opts ...grpc.CallOption) (*CreateSessionResponse, error)
+	GetActiveAssetSession(ctx context.Context, in *GetActiveAssetSessionRequest, opts ...grpc.CallOption) (*GetActiveAssetSessionResponse, error)
 }
 
 type sessionServiceClient struct {
@@ -47,11 +49,22 @@ func (c *sessionServiceClient) CreateSession(ctx context.Context, in *CreateSess
 	return out, nil
 }
 
+func (c *sessionServiceClient) GetActiveAssetSession(ctx context.Context, in *GetActiveAssetSessionRequest, opts ...grpc.CallOption) (*GetActiveAssetSessionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetActiveAssetSessionResponse)
+	err := c.cc.Invoke(ctx, SessionService_GetActiveAssetSession_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SessionServiceServer is the server API for SessionService service.
 // All implementations must embed UnimplementedSessionServiceServer
 // for forward compatibility.
 type SessionServiceServer interface {
 	CreateSession(context.Context, *CreateSessionRequest) (*CreateSessionResponse, error)
+	GetActiveAssetSession(context.Context, *GetActiveAssetSessionRequest) (*GetActiveAssetSessionResponse, error)
 	mustEmbedUnimplementedSessionServiceServer()
 }
 
@@ -64,6 +77,9 @@ type UnimplementedSessionServiceServer struct{}
 
 func (UnimplementedSessionServiceServer) CreateSession(context.Context, *CreateSessionRequest) (*CreateSessionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateSession not implemented")
+}
+func (UnimplementedSessionServiceServer) GetActiveAssetSession(context.Context, *GetActiveAssetSessionRequest) (*GetActiveAssetSessionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetActiveAssetSession not implemented")
 }
 func (UnimplementedSessionServiceServer) mustEmbedUnimplementedSessionServiceServer() {}
 func (UnimplementedSessionServiceServer) testEmbeddedByValue()                        {}
@@ -104,6 +120,24 @@ func _SessionService_CreateSession_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SessionService_GetActiveAssetSession_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetActiveAssetSessionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionServiceServer).GetActiveAssetSession(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SessionService_GetActiveAssetSession_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionServiceServer).GetActiveAssetSession(ctx, req.(*GetActiveAssetSessionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SessionService_ServiceDesc is the grpc.ServiceDesc for SessionService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -114,6 +148,10 @@ var SessionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateSession",
 			Handler:    _SessionService_CreateSession_Handler,
+		},
+		{
+			MethodName: "GetActiveAssetSession",
+			Handler:    _SessionService_GetActiveAssetSession_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
