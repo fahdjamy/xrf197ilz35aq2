@@ -104,6 +104,9 @@ func (srv *BidService) StreamOpenBids(req *v1.StreamOpenBidsRequest, srvStream g
 	if err != nil {
 		return err
 	}
+	if activeSession == nil {
+		return fmt.Errorf("no active session found for assetId=%s", req.AssetId)
+	}
 	srv.Log.Info("streaming open bids", "assetId", req.AssetId, "sessionId", activeSession.Id)
 
 	for {

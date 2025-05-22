@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "xrf197ilz35aq2/gen/go/service/session/v1";
+
+service SessionService {
+  rpc CreateSession(CreateSessionRequest) returns (CreateSessionResponse);
+}
+
+// //////// create session
+
+message SessionResponse {
+  string status = 1;
+  string user_fp = 2;
+  string asset_id = 3;
+  string session_id = 4;
+  bool auto_execute = 5;
+  float reserve_price = 6;
+  string auction_type = 7;
+  optional string name = 8;
+  float current_highest_bid = 9;
+  float bid_increment_amount = 10;
+  google.protobuf.Timestamp end_time = 11;
+  google.protobuf.Timestamp start_time = 12;
+  google.protobuf.Timestamp created_at = 13;
+}
+
+message CreateSessionRequest {
+  string asset_id = 1;
+  bool auto_execute = 2;
+  float reserve_price = 3;
+  string auction_type = 4;
+  optional string name = 5;
+  float bid_increment_amount = 6;
+  google.protobuf.Timestamp end_time = 7;
+  google.protobuf.Timestamp start_time = 8;
+}
+
+message CreateSessionResponse {
+    SessionResponse session = 1;
+}
