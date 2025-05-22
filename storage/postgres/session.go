@@ -176,7 +176,7 @@ AND end_time > $2`
 		sessions = append(sessions, session)
 	}
 	if len(sessions) == 0 {
-		return nil, nil
+		return nil, fmt.Errorf("there are no active sessions for the asset")
 	}
 	if len(sessions) > 1 {
 		return nil, fmt.Errorf("invalid session state, found more than one active sessions for the asset")
