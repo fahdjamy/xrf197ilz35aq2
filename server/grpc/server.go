@@ -4,7 +4,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 	"log/slog"
-	"xrf197ilz35aq2/gen/go/service/v1"
+	sessionV1 "xrf197ilz35aq2/gen/go/service/session/v1"
+	bidV1 "xrf197ilz35aq2/gen/go/service/v1"
 	"xrf197ilz35aq2/server/grpc/services"
 	"xrf197ilz35aq2/storage/postgres"
 	"xrf197ilz35aq2/storage/redis"
@@ -15,8 +16,9 @@ func NewGRPCSrv(log slog.Logger, cacheClient redis.CacheClients, repos postgres.
 	// Pass in server options here, like interceptors, TLS credentials, etc.
 	grpcServer := grpc.NewServer()
 
-	// 2. Register your service implementation with the gRPC server.
-	v1.RegisterBidServiceServer(grpcServer, services.NewBidService(log, cacheClient.BidClient, repos.BidRepository))
+	// 2. Register service implementations with the gRPC server.
+	sessionV1.RegisterSessionServiceServer(grpcServer, services.NewSessionServiceServer(log, repos.SessionRepository))
+	bidV1.RegisterBidServiceServer(grpcServer, services.NewBidService(log, cacheClient.BidClient, repos.BidRepository))
 
 	// 3. Optional: Register gRPC server reflection.
 	// This allows gRPC clients (like grpcurl or a GUI client) to query what services and methods are available on
