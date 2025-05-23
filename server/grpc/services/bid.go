@@ -45,6 +45,7 @@ func (srv *bidService) CreateBid(ctx context.Context, request *v1.CreateBidReque
 	}
 	return &v1.CreateBidResponse{
 		Bid: &v1.BidResponse{
+			BidId:     bid.Id,
 			AssetId:   bid.AssetId,
 			SessionId: activeSession.Id,
 			LastUntil: request.LastUntil,
@@ -72,6 +73,7 @@ func (srv *bidService) GetUserBid(ctx context.Context, request *v1.GetUserBidReq
 	var bidResponses []*v1.BidResponse
 	for _, bid := range bids {
 		bidResponses = append(bidResponses, &v1.BidResponse{
+			BidId:     bid.Id,
 			AssetId:   bid.AssetId,
 			SessionId: bid.SessionId,
 			Amount:    float32(bid.Amount),
@@ -133,6 +135,7 @@ func (srv *bidService) StreamOpenBids(req *v1.StreamOpenBidsRequest, srvStream g
 		var bidResponses []*v1.BidResponse
 		for _, bid := range bids {
 			bidResponses = append(bidResponses, &v1.BidResponse{
+				BidId:     bid.Id,
 				AssetId:   bid.AssetId,
 				SessionId: bid.SessionId,
 				Amount:    float32(bid.Amount),
