@@ -56,7 +56,7 @@ func (repo *bidRepository) BatchCreateBids(ctx context.Context, bids []domain.Bi
 	defer func(tx pgx.Tx, ctx context.Context) {
 		err := tx.Rollback(ctx)
 		if err != nil {
-			repo.log.Error(fmt.Sprintf("error rolling back transaction for batch create bids: %w", err))
+			repo.log.Error("error rolling back transaction for batch create bids", "err", err)
 		}
 	}(tx, ctx) //Rollback on error
 

@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"fmt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -70,7 +69,7 @@ func (srvc *sessionService) GetActiveAssetSession(ctx context.Context, req *v1.G
 	}
 
 	if activeSession == nil {
-		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("no active session found for assetId=%s", req.AssetId))
+		return nil, status.Errorf(codes.NotFound, "no active session found for assetId=%s", req.AssetId)
 	}
 
 	return &v1.GetActiveAssetSessionResponse{

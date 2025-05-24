@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"fmt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -130,7 +129,7 @@ func (srv *bidService) StreamOpenBids(req *v1.StreamOpenBidsRequest, srvStream g
 		return err
 	}
 	if activeSession == nil {
-		return status.Errorf(codes.NotFound, fmt.Sprintf("no active session found for assetId=%s", req.AssetId))
+		return status.Errorf(codes.NotFound, "no active session found for assetId=%s", req.AssetId)
 	}
 	srv.Log.Info("streaming open bids", "assetId", req.AssetId, "sessionId", activeSession.Id)
 
