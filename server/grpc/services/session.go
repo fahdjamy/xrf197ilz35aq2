@@ -3,6 +3,8 @@ package services
 import (
 	"context"
 	"fmt"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"log/slog"
 	"xrf197ilz35aq2/core/domain"
@@ -36,13 +38,13 @@ func (srvc *sessionService) CreateSession(ctx context.Context, req *v1.CreateSes
 
 	newSession, err := domain.NewSession(sessionReq, "")
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, "failed to create session")
 	}
 
 	createdSessionId, err := srvc.sessionRepo.Create(ctx, newSession)
 
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, "failed to create session")
 	}
 	return &v1.CreateSessionResponse{
 		Session: &v1.SessionResponse{
@@ -64,11 +66,11 @@ func (srvc *sessionService) CreateSession(ctx context.Context, req *v1.CreateSes
 func (srvc *sessionService) GetActiveAssetSession(ctx context.Context, req *v1.GetActiveAssetSessionRequest) (*v1.GetActiveAssetSessionResponse, error) {
 	activeSession, err := srvc.sessionRepo.FindActiveSession(ctx, req.AssetId)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, "failed to find active session")
 	}
 
 	if activeSession == nil {
-		return nil, fmt.Errorf("no active session found for assetId=%s", req.AssetId)
+		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("no active session found for assetId=%s", req.AssetId))
 	}
 
 	return &v1.GetActiveAssetSessionResponse{
