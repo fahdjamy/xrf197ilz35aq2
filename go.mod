@@ -6,7 +6,7 @@ require (
 	github.com/go-playground/validator/v10 v10.26.0
 	github.com/jackc/pgx/v5 v5.7.5
 	github.com/lmittmann/tint v1.1.0
-	github.com/redis/go-redis/v9 v9.8.0
+	github.com/redis/go-redis/v9 v9.9.0
 	github.com/spf13/viper v1.20.1
 	google.golang.org/grpc v1.72.1
 	google.golang.org/protobuf v1.36.6
