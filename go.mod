@@ -5,7 +5,7 @@ go 1.24.0
 require (
 	github.com/go-playground/validator/v10 v10.26.0
 	github.com/jackc/pgx/v5 v5.7.5
-	github.com/lmittmann/tint v1.1.1
+	github.com/lmittmann/tint v1.1.2
 	github.com/redis/go-redis/v9 v9.10.0
 	github.com/spf13/viper v1.20.1
 	google.golang.org/grpc v1.73.0
