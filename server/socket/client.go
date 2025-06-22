@@ -38,8 +38,8 @@ var upgrader = websocket.Upgrader{
 type Client struct {
 	hub  *Hub
 	send chan []byte
-	conn *websocket.Conn
 	log  slog.Logger
+	conn *websocket.Conn
 }
 
 // readPump pumps messages from the websocket connection to the hub.
