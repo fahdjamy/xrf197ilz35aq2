@@ -1,0 +1,67 @@
+package socket
+
+import (
+	"context"
+	"errors"
+	"log/slog"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+)
+
+func WSHTTPServer(log slog.Logger) {
+	hub := newHub()
+	go hub.run()
+	http.HandleFunc("/xrf-ws", func(w http.ResponseWriter, r *http.Request) {
+		// TODO: Authenticate the user here before upgrading the connection.
+		serveWS(hub, w, r, log)
+	})
+	// TODO: IN production, use ListenAndServeTLS
+	server := &http.Server{
+		Addr: ":8082",
+	}
+
+	go func() {
+		log.Info("starting ws http server on port 8082")
+		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Error("starting http server error", err)
+			return
+		}
+	}()
+
+	// Graceful shutdown
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	log.Info("shutting down WS server...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := server.Shutdown(ctx); err != nil {
+		log.Error("WS server shutdown error", "err", err.Error())
+	}
+	log.Info("WS server gracefully stopped")
+}
+
+// serveWS handles websocket requests from the peer.
+func serveWS(hub *Hub, w http.ResponseWriter, r *http.Request, log slog.Logger) {
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Error("failed to upgrade WS connection", "err", err)
+		return
+	}
+	client := &Client{
+		hub:  hub,
+		log:  log,
+		conn: conn,
+		send: make(chan []byte, 256),
+	}
+	client.hub.register <- client
+
+	go client.writePump()
+	go client.readPump()
+}
