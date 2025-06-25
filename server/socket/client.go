@@ -1,6 +1,7 @@
 package socket
 
 import (
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"log/slog"
 	"net/http"
@@ -9,10 +10,10 @@ import (
 
 const (
 	// Time allowed writing a message to the peer.
-	writeWait = 10 * time.Second
+	writeWait = 5 * time.Second
 
 	// Time allowed reading the next pong message from the peer.
-	pongWait = 60 * time.Second
+	pongWait = 30 * time.Second
 
 	// Send pings to peer with this period. Must be less than pongWait.
 	pingPeriod = (pongWait * 9) / 10
@@ -37,16 +38,30 @@ var upgrader = websocket.Upgrader{
 // Client is an intermediary between the websocket connection and the hub.
 type Client struct {
 	hub  *Hub
+	id   string
 	send chan []byte
 	log  slog.Logger
 	conn *websocket.Conn
+}
+
+func NewClient(hub *Hub, conn *websocket.Conn, log slog.Logger) *Client {
+	return &Client{
+		hub:  hub,
+		conn: conn,
+		log:  log,
+		id:   uuid.New().String(),
+		send: make(chan []byte, 256),
+	}
 }
 
 // readPump pumps messages from the websocket connection to the hub.
 func (c *Client) readPump() {
 	defer func() {
 		c.hub.unregister <- c
-		c.conn.Close()
+		err := c.conn.Close()
+		if err != nil {
+			c.log.Error("close conn failed", "err", err)
+		}
 	}()
 	c.conn.SetReadLimit(maxMessageSize)
 	err := c.conn.SetReadDeadline(time.Now().Add(pongWait))
@@ -65,6 +80,7 @@ func (c *Client) readPump() {
 			break
 		}
 		c.hub.broadcast <- message
+		c.log.Info("client send message", "message", string(message), "id", c.id)
 	}
 }
 

@@ -54,12 +54,7 @@ func serveWS(hub *Hub, w http.ResponseWriter, r *http.Request, log slog.Logger) 
 		log.Error("failed to upgrade WS connection", "err", err)
 		return
 	}
-	client := &Client{
-		hub:  hub,
-		log:  log,
-		conn: conn,
-		send: make(chan []byte, 256),
-	}
+	client := NewClient(hub, conn, log)
 	client.hub.register <- client
 
 	go client.writePump()
