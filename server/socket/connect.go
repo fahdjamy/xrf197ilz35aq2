@@ -11,12 +11,10 @@ import (
 	"time"
 )
 
-func WSHTTPServer(log slog.Logger) {
-	hub := newHub()
-	go hub.run()
+func StartWSServer(log slog.Logger, hub *Hub) {
 	http.HandleFunc("/xrf-ws", func(w http.ResponseWriter, r *http.Request) {
 		// TODO: Authenticate the user here before upgrading the connection.
-		serveWS(hub, w, r, log)
+		ServeWS(hub, w, r, log)
 	})
 	// TODO: IN production, use ListenAndServeTLS
 	server := &http.Server{
@@ -47,8 +45,8 @@ func WSHTTPServer(log slog.Logger) {
 	log.Info("WS server gracefully stopped")
 }
 
-// serveWS handles websocket requests from the peer.
-func serveWS(hub *Hub, w http.ResponseWriter, r *http.Request, log slog.Logger) {
+// ServeWS handles websocket requests from the peer.
+func ServeWS(hub *Hub, w http.ResponseWriter, r *http.Request, log slog.Logger) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Error("failed to upgrade WS connection", "err", err)

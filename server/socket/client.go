@@ -79,8 +79,7 @@ func (c *Client) readPump() {
 			}
 			break
 		}
-		c.hub.broadcast <- message
-		c.log.Info("client send message", "message", string(message), "id", c.id)
+		c.log.Info("client sent a message", "message", string(message), "id", c.id)
 	}
 }
 

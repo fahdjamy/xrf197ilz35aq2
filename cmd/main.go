@@ -2,17 +2,21 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/go-playground/validator/v10"
 	"log/slog"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 	"xrf197ilz35aq2/internal"
 	"xrf197ilz35aq2/server/grpc"
+	"xrf197ilz35aq2/server/socket"
 	"xrf197ilz35aq2/storage"
 	"xrf197ilz35aq2/storage/postgres"
 	"xrf197ilz35aq2/storage/redis"
@@ -83,26 +87,57 @@ func main() {
 		return
 	}
 
+	// create a websocket hub
+	hub := socket.NewHub()
+	go hub.Run()
+
 	// 2. create a gRPC server
-	grpcServer, err := grpc.NewGRPCSrv(*logger, cacheClient, allRepos)
+	grpcServer, err := grpc.NewGRPCSrv(*logger, cacheClient, allRepos, hub)
 	if err != nil {
 		logger.Error("failed to start gRPC server", "port", gRPCPortAddress, "err", err)
 		return
 	}
 
-	// 3. start the gRPC server
-	//	  :: Serve() will block until the process is killed or Stop() is called.
-	if err = grpcServer.Serve(listener); err != nil {
-		logger.Error("Failed to serve gRPC server", "err", err)
-		return
+	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+		// TODO: Authenticate the user here before upgrading the connection.
+		socket.ServeWS(hub, w, r, *logger)
+	})
+	// TODO: IN production, use ListenAndServeTLS
+	server := &http.Server{
+		Addr: ":8082",
 	}
+
+	serverStartWg := &sync.WaitGroup{}
+	serverStartWg.Add(2)
+
+	// 3. start websocket server in a separate go routine
+	go func() {
+		serverStartWg.Done()
+		logger.Info("starting websocket http server on port 8082")
+		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			logger.Error("starting http server error", err)
+			return
+		}
+	}()
+
+	// 4. start the gRPC server in a go routine
+	//	  :: Serve() will block until the process is killed or Stop() is called.
+	go func() {
+		serverStartWg.Done()
+		logger.Info("starting gRPC server", "port", gRPCPortAddress)
+		if err = grpcServer.Serve(listener); err != nil {
+			logger.Error("Failed to serve gRPC server", "err", err)
+			return
+		}
+	}()
+	serverStartWg.Wait()
 
 	logger.Info("**** started xrf197ilz35aq (ii) app *****")
 
 	shutdownSignal := make(chan os.Signal, 1)
 	signal.Notify(shutdownSignal, syscall.SIGINT, syscall.SIGTERM)
 	<-shutdownSignal // Block until the shutdown signal is received
-	logger.Info("\n shuttingDown xrf197ilz35aq")
+	logger.Info("--------- shuttingDown xrf197ilz35aq ---------")
 }
 
 func getAppEnv() string {

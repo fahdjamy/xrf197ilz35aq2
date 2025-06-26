@@ -11,11 +11,13 @@ import (
 	"time"
 	v1 "xrf197ilz35aq2/gen/go/service/v1"
 	"xrf197ilz35aq2/internal/exchange"
+	"xrf197ilz35aq2/server/socket"
 	"xrf197ilz35aq2/storage/postgres"
 	"xrf197ilz35aq2/storage/redis"
 )
 
 type bidService struct {
+	hub            *socket.Hub
 	Log            slog.Logger
 	BidCacheClient redis.BidCache
 	BidRepo        postgres.BidRepository
@@ -178,10 +180,11 @@ func (srv *bidService) StreamOpenBids(req *v1.StreamOpenBidsRequest, srvStream g
 	}
 }
 
-func NewBidService(log slog.Logger, bidCache redis.BidCache, BidRepo postgres.BidRepository) v1.BidServiceServer {
+func NewBidService(log slog.Logger, bidCache redis.BidCache, BidRepo postgres.BidRepository, hub *socket.Hub) v1.BidServiceServer {
 	return &bidService{
+		hub:            hub,
 		Log:            log,
-		BidCacheClient: bidCache,
 		BidRepo:        BidRepo,
+		BidCacheClient: bidCache,
 	}
 }
