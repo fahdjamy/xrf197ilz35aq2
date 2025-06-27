@@ -91,28 +91,21 @@ func main() {
 	hub := socket.NewHub()
 	go hub.Run()
 
-	// 2. create a gRPC server
-	grpcServer, err := grpc.NewGRPCSrv(*logger, cacheClient, allRepos, hub)
-	if err != nil {
-		logger.Error("failed to start gRPC server", "port", gRPCPortAddress, "err", err)
-		return
-	}
-
-	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
-		// TODO: Authenticate the user here before upgrading the connection.
-		socket.ServeWS(hub, w, r, *logger)
-	})
-	// TODO: IN production, use ListenAndServeTLS
-	server := &http.Server{
-		Addr: ":8082",
-	}
-
 	serverStartWg := &sync.WaitGroup{}
 	serverStartWg.Add(2)
 
 	// 3. start websocket server in a separate go routine
 	go func() {
+		http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+			// TODO: Authenticate the user here before upgrading the connection.
+			socket.ServeWS(hub, w, r, *logger)
+		})
+
 		serverStartWg.Done()
+		// TODO: IN production, use ListenAndServeTLS
+		server := &http.Server{
+			Addr: ":8082",
+		}
 		logger.Info("starting websocket http server on port 8082")
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			logger.Error("starting http server error", err)
@@ -124,6 +117,9 @@ func main() {
 	//	  :: Serve() will block until the process is killed or Stop() is called.
 	go func() {
 		serverStartWg.Done()
+		// 2. create a gRPC server
+		grpcServer, err := grpc.NewGRPCSrv(*logger, cacheClient, allRepos, hub)
+		healthBeatCheck(*logger)
 		logger.Info("starting gRPC server", "port", gRPCPortAddress)
 		if err = grpcServer.Serve(listener); err != nil {
 			logger.Error("Failed to serve gRPC server", "err", err)
@@ -181,4 +177,10 @@ func setTimescaleDB(config *internal.Config, logger slog.Logger) (*storage.Times
 		return nil, fmt.Errorf("failed to migrate timescaleDB: tables :: err=%w", err)
 	}
 	return timescalePool, nil
+}
+
+func healthBeatCheck(logger slog.Logger) {
+	for range time.Tick(time.Second * 30) {
+		logger.Info("app is health listening. gRPC listening on", "port", gRPCPortAddress)
+	}
 }
