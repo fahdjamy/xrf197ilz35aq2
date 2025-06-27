@@ -88,7 +88,7 @@ func main() {
 	}
 
 	// create a websocket hub
-	hub := socket.NewHub()
+	hub := socket.NewHub(*logger)
 	go hub.Run()
 
 	serverStartWg := &sync.WaitGroup{}

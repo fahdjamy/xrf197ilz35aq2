@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -67,6 +68,16 @@ func (srv *bidService) CreateBid(ctx context.Context, request *v1.CreateBidReque
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to save bid")
 	}
+
+	// broadcast new bid to every subscriber in the socket
+	// Marshal the struct into a JSON byte slice.
+	messageBytes, err := json.Marshal(bid)
+	if err != nil {
+		srv.Log.Error("failed to marshal bid for websocket listeners", "bid", bid, "err", err)
+	} else {
+		srv.hub.Broadcast <- messageBytes
+	}
+
 	return &v1.CreateBidResponse{
 		Bid: &v1.BidResponse{
 			BidId:     bid.Id,
