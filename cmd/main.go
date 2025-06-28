@@ -5,13 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"github.com/go-playground/validator/v10"
+	"golang.org/x/sync/errgroup"
 	"log/slog"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
 	"strings"
-	"sync"
 	"syscall"
 	"time"
 	"xrf197ilz35aq2/internal"
@@ -80,60 +80,79 @@ func main() {
 		SessionRepository: postgres.NewSessionRepository(pgPool.Pool, *logger),
 	}
 
-	// 1. Create a TCP listener on the specified port
+	/////// 1. Create a TCP listener on the specified port
 	listener, err := net.Listen("tcp", gRPCPortAddress)
 	if err != nil {
 		logger.Error("failed to start listening on gRPC port", "port", gRPCPortAddress, "err", err)
 		return
 	}
 
-	// create a websocket hub
+	// Context that is to be canceled when a shutdown signal is received.
+	cancellableCtx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer cancel()
+
+	// Create an err-group tied to our cancellable context.
+	g, gCtx := errgroup.WithContext(cancellableCtx)
+
+	/////// 2. Create a websocket hub and start it ---
 	hub := socket.NewHub(*logger)
-	go hub.Run()
+	g.Go(func() error {
+		return hub.Run(gCtx)
+	})
 
-	serverStartWg := &sync.WaitGroup{}
-	serverStartWg.Add(2)
+	/////// 3. start websocket server in a separate go routine
+	// TODO: IN production, use ListenAndServeTLS
+	server := &http.Server{
+		Addr: ":8082",
+	}
 
-	// 3. start websocket server in a separate go routine
-	go func() {
+	g.Go(func() error {
 		http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
 			// TODO: Authenticate the user here before upgrading the connection.
 			socket.ServeWS(hub, w, r, *logger)
 		})
 
-		serverStartWg.Done()
-		// TODO: IN production, use ListenAndServeTLS
-		server := &http.Server{
-			Addr: ":8082",
-		}
 		logger.Info("starting websocket http server on port 8082")
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			logger.Error("starting http server error", err)
-			return
+			return fmt.Errorf("starting http server: %w", err)
 		}
-	}()
+		return nil
+	})
 
-	// 4. start the gRPC server in a go routine
-	//	  :: Serve() will block until the process is killed or Stop() is called.
-	go func() {
-		serverStartWg.Done()
-		// 2. create a gRPC server
-		grpcServer, err := grpc.NewGRPCSrv(*logger, cacheClient, allRepos, hub)
-		healthBeatCheck(*logger)
+	//////// 4. start the gRPC server in a go routine
+	grpcServer, err := grpc.NewGRPCSrv(*logger, cacheClient, allRepos, hub)
+	g.Go(func() error {
 		logger.Info("starting gRPC server", "port", gRPCPortAddress)
 		if err = grpcServer.Serve(listener); err != nil {
 			logger.Error("Failed to serve gRPC server", "err", err)
-			return
+			return fmt.Errorf("starting gRPC server: %w", err)
 		}
-	}()
-	serverStartWg.Wait()
+		return nil
+	})
 
-	logger.Info("**** started xrf197ilz35aq (ii) app *****")
+	healthBeatCheck(*logger)
 
-	shutdownSignal := make(chan os.Signal, 1)
-	signal.Notify(shutdownSignal, syscall.SIGINT, syscall.SIGTERM)
-	<-shutdownSignal // Block until the shutdown signal is received
-	logger.Info("--------- shuttingDown xrf197ilz35aq ---------")
+	// gracefully shut down the application if one of the servers fails, i.e., when the context is canceled.
+	g.Go(func() error {
+		<-cancellableCtx.Done() // Block until the context is canceled.
+		logger.Info("!!!!!! shutting down xrf197ilz35aq !!!!!!")
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer shutdownCancel()
+		if err := server.Shutdown(shutdownCtx); err != nil {
+			logger.Error("failed to shutdown xrf197ilz35aq", "err", err)
+		}
+		return nil
+	})
+
+	logger.Info("**** started xrf197ilz35aq (ii) app successfully *****")
+
+	if err := g.Wait(); err != nil {
+		// If Wait() returns an error, it means one of the goroutines (i.e., servers) failed to start.
+		logger.Error("failed to start xrf197ilz35aq", "err", err)
+	} else {
+		logger.Info("**** xrf197ilz35aq (ii) existing graceful *****")
+	}
 }
 
 func getAppEnv() string {
@@ -180,7 +199,7 @@ func setTimescaleDB(config *internal.Config, logger slog.Logger) (*storage.Times
 }
 
 func healthBeatCheck(logger slog.Logger) {
-	for range time.Tick(time.Second * 30) {
-		logger.Info("app is health listening. gRPC listening on", "port", gRPCPortAddress)
+	for range time.Tick(time.Second * 60) {
+		logger.Info("event=appHealthCheck", "message", "healthy")
 	}
 }

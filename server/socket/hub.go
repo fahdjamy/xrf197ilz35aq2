@@ -1,6 +1,9 @@
 package socket
 
-import "log/slog"
+import (
+	"context"
+	"log/slog"
+)
 
 // Hub maintains the set of active clients and broadcasts messages to them.
 // The Hub is the central component that manages all connected clients and message broadcasting.
@@ -23,9 +26,16 @@ func NewHub(logger slog.Logger) *Hub {
 	}
 }
 
-func (h *Hub) Run() {
+func (h *Hub) Run(ctx context.Context) error {
 	for {
 		select {
+		case <-ctx.Done():
+			h.logger.Info("** WS hub shutting down **")
+			// Gracefully close all client connections
+			for client := range h.clients {
+				close(client.send) // This will cause the writePump to exit
+			}
+			return ctx.Err() // Return the context's error (e.g., context.Canceled)
 		case client := <-h.register:
 			h.clients[client] = true
 		case client := <-h.unregister:

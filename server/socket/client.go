@@ -106,6 +106,7 @@ func (c *Client) writePump() {
 				}
 				return
 			}
+			c.log.Debug("write message", "message", string(message))
 
 			w, err := c.conn.NextWriter(websocket.TextMessage)
 			if err != nil {
