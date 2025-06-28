@@ -80,6 +80,10 @@ func main() {
 		SessionRepository: postgres.NewSessionRepository(pgPool.Pool, *logger),
 	}
 
+	runApp(err, logger, cacheClient, allRepos)
+}
+
+func runApp(err error, logger *slog.Logger, cacheClient redis.CacheClients, allRepos postgres.Repositories) {
 	/////// 1. Create a TCP listener on the specified port
 	listener, err := net.Listen("tcp", gRPCPortAddress)
 	if err != nil {
