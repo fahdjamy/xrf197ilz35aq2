@@ -118,7 +118,7 @@ func runApp(logger *slog.Logger, cacheClient redis.CacheClients, allRepos postgr
 
 		logger.Info("starting websocket http server on port 8082")
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			logger.Error("starting http server error", err)
+			logger.Error("starting http server error", "err", err)
 			return fmt.Errorf("starting http server: %w", err)
 		}
 		return nil
