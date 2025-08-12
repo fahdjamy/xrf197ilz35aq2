@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/go-playground/validator/v10"
-	"golang.org/x/sync/errgroup"
 	"log/slog"
 	"net"
 	"net/http"
@@ -22,6 +20,9 @@ import (
 	"xrf197ilz35aq2/storage/redis"
 	"xrf197ilz35aq2/storage/timescale"
 	"xrf197ilz35aq2/validators"
+
+	"github.com/go-playground/validator/v10"
+	"golang.org/x/sync/errgroup"
 )
 
 const gRPCPortAddress = ":50052"

@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/go-playground/validator/v10"
 	"log/slog"
 	"xrf197ilz35aq2/core/domain"
 	"xrf197ilz35aq2/internal/exchange"
+
+	"github.com/go-playground/validator/v10"
 )
 
 type SessionServ interface {
