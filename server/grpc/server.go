@@ -1,8 +1,6 @@
 package grpc
 
 import (
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/reflection"
 	"log/slog"
 	sessionV1 "xrf197ilz35aq2/gen/go/service/session/v1"
 	bidV1 "xrf197ilz35aq2/gen/go/service/v1"
@@ -10,6 +8,9 @@ import (
 	"xrf197ilz35aq2/server/socket"
 	"xrf197ilz35aq2/storage/postgres"
 	"xrf197ilz35aq2/storage/redis"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
 func NewGRPCSrv(log slog.Logger, cacheClient redis.CacheClients, repos postgres.Repositories, hub *socket.Hub) (*grpc.Server, error) {

@@ -1,11 +1,12 @@
 package socket
 
 import (
-	"github.com/google/uuid"
-	"github.com/gorilla/websocket"
 	"log/slog"
 	"net/http"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/gorilla/websocket"
 )
 
 const (

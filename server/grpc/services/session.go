@@ -2,14 +2,15 @@ package services
 
 import (
 	"context"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/timestamppb"
 	"log/slog"
 	"xrf197ilz35aq2/core/domain"
 	v1 "xrf197ilz35aq2/gen/go/service/session/v1"
 	"xrf197ilz35aq2/internal/exchange"
 	"xrf197ilz35aq2/storage/postgres"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type sessionService struct {

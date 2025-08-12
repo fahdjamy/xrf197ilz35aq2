@@ -2,13 +2,14 @@ package internal
 
 import (
 	"fmt"
-	"github.com/lmittmann/tint"
-	"gopkg.in/natefinch/lumberjack.v2"
 	"io"
 	"log/slog"
 	"os"
 	"strings"
 	"sync"
+
+	"github.com/lmittmann/tint"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 var (
