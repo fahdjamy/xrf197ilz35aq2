@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/redis/go-redis/v9"
 	"log/slog"
 	"time"
 	"xrf197ilz35aq2/core/domain"
 	"xrf197ilz35aq2/internal/exchange"
+
+	"github.com/redis/go-redis/v9"
 )
 
 type BidCache interface {

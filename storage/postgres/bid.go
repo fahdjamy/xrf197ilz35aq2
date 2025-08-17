@@ -3,11 +3,12 @@ package postgres
 import (
 	"context"
 	"fmt"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"log/slog"
 	"xrf197ilz35aq2/core/domain"
 	"xrf197ilz35aq2/storage/postgres/dao"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type BidRepository interface {

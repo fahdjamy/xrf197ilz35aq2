@@ -3,10 +3,11 @@ package postgres
 import (
 	"context"
 	"fmt"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"log/slog"
 	"time"
 	"xrf197ilz35aq2/core/domain"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type SessionRepository interface {

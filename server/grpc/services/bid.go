@@ -3,11 +3,6 @@ package services
 import (
 	"context"
 	"encoding/json"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/timestamppb"
 	"log/slog"
 	"time"
 	v1 "xrf197ilz35aq2/gen/go/service/v1"
@@ -15,6 +10,12 @@ import (
 	"xrf197ilz35aq2/server/socket"
 	"xrf197ilz35aq2/storage/postgres"
 	"xrf197ilz35aq2/storage/redis"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type bidService struct {

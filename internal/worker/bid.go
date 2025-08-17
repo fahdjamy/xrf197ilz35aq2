@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/redis/go-redis/v9"
 	"log/slog"
 	"time"
 	"xrf197ilz35aq2/core/domain"
 	"xrf197ilz35aq2/storage/postgres"
 	"xrf197ilz35aq2/storage/timescale/queries"
+
+	"github.com/redis/go-redis/v9"
 )
 
 type JobsConfig struct {

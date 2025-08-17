@@ -3,12 +3,13 @@ package timescale
 import (
 	"context"
 	"fmt"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
 	"xrf197ilz35aq2/internal"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 const (
