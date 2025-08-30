@@ -12,7 +12,7 @@ require (
 	github.com/spf13/viper v1.20.1
 	golang.org/x/sync v0.16.0
 	google.golang.org/grpc v1.75.0
-	google.golang.org/protobuf v1.36.7
+	google.golang.org/protobuf v1.36.8
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
 
