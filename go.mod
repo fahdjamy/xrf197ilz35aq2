@@ -6,7 +6,7 @@ require (
 	github.com/go-playground/validator/v10 v10.27.0
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.3
-	github.com/jackc/pgx/v5 v5.7.5
+	github.com/jackc/pgx/v5 v5.7.6
 	github.com/lmittmann/tint v1.1.2
 	github.com/redis/go-redis/v9 v9.12.1
 	github.com/spf13/viper v1.20.1
