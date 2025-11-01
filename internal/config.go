@@ -5,14 +5,11 @@ import (
 	"os"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/spf13/viper"
 )
 
 const (
-	maxRetries    = 3
-	retryAfter    = 2 * time.Second
 	tsDBEnvURLKey = "XRF_Q2_BID_TS_DB_URL"
 	pgDBEnvURLKey = "XRF_Q2_BID_PG_DB_URL"
 )

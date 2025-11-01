@@ -12,7 +12,7 @@ import (
 )
 
 type SessionServ interface {
-	CreateSession(request exchange.NewSessionRequest, userFp string, ctx context.Context) (*domain.Session, error)
+	CreateSession(ctx context.Context, request exchange.NewSessionRequest, userFp string) (*domain.Session, error)
 }
 
 type sessionService struct {
@@ -20,7 +20,7 @@ type sessionService struct {
 	log      slog.Logger
 }
 
-func (a *sessionService) CreateSession(request exchange.NewSessionRequest, userFp string, ctx context.Context) (*domain.Session, error) {
+func (a *sessionService) CreateSession(ctx context.Context, request exchange.NewSessionRequest, userFp string) (*domain.Session, error) {
 	err := a.validateRequest(request)
 	if err != nil {
 		return nil, err
