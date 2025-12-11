@@ -30,7 +30,7 @@ jobs:
 
     steps:
       - name: Checkout source code onto a VM
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup go ${{ matrix.go-version }}
         uses: actions/setup-go@v5
